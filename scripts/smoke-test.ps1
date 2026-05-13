@@ -83,7 +83,7 @@ $ScenarioConfig = @{
 }
 
 $config = $ScenarioConfig[$Scenario]
-$scenarioDir = Join-Path $PSScriptRoot "..\scenarios\$Scenario"
+$scenarioDir = Join-Path $PSScriptRoot '..' 'scenarios' $Scenario
 
 Write-Host "🔍 Smoke test for scenario: $($config.Name) ($Scenario)" -ForegroundColor Magenta
 
@@ -137,7 +137,7 @@ try {
         Write-Verbose "Starting compose stack..."
         try {
             # Use the scenario's set-env.ps1 if it exists
-            $setEnvScript = Join-Path $scenarioDir "scripts\set-env.ps1"
+            $setEnvScript = Join-Path $scenarioDir 'scripts' 'set-env.ps1'
             if (Test-Path $setEnvScript) {
                 & $setEnvScript
             } else {

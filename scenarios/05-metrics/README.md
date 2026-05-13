@@ -77,17 +77,17 @@ By configuring the address, SPIRE will be pushing metrics to the StatsD collecto
 
 ##  Graphite & StatsD Configuration
 
-We use the official Docker image for Graphite and StatsD. This image already contains all the services necessary to collect and display metrics. For this tutorial we map the port `80` that belongs to the nginx proxy that reverse proxies the Graphite dashboard and the port `8125` where StatsD listens by default to the same external ports of 80 and 8125, respectively.
+We use the official Docker image for Graphite and StatsD. This image already contains all the services necessary to collect and display metrics. For this tutorial we map the port `80` that belongs to the nginx proxy that reverse proxies the Graphite dashboard to host port `8080`, and the port `8125` where StatsD listens by default to the same external port.
 The `graphite-statsd` service definition is:
 
 ```console
   graphite-statsd:
-    image: graphiteapp/graphite-statsd:1.1.7-6
+    image: graphiteapp/graphite-statsd:1.1.10-5
     container_name: graphite
     hostname: graphite-statsd
     restart: always
     ports:
-        - "80:80"
+        - "8080:80"
         - "8125:8125/udp"
 ```
 
@@ -116,7 +116,7 @@ To run Prometheus we use the official Docker image and we mount the local direct
 
 ```console
 prometheus:
-  image: prom/prometheus:v2.20.1
+  image: prom/prometheus:v3.11.3
   container_name: prometheus
   hostname: prometheus
   restart: always
@@ -145,7 +145,7 @@ podman-compose logs -f -t
 
 ## Part 2: Test the Deployments
 
-Let's see some real data. Open your browser and navigate to `http://localhost/` to see the Graphite web UI and, on a different tab, navigate to `http://localhost:9090/` to access the Prometheus web UI.
+Let's see some real data. Open your browser and navigate to `http://localhost:8080/` to see the Graphite web UI and, on a different tab, navigate to `http://localhost:9090/` to access the Prometheus web UI.
 
 To generate some data, let's create a workload registration entry:
 

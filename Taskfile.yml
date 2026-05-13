@@ -34,8 +34,14 @@ tasks:
   clean:
     desc: Remove all built binaries
     cmds:
-      - rm -f {{.SVID_API_DIR}}/server/svid-server{{exeExt}}
-      - rm -f {{.SVID_API_DIR}}/client/svid-client{{exeExt}}
+      - cmd: rm -f {{.SVID_API_DIR}}/server/svid-server{{exeExt}}
+        platforms: [linux, darwin]
+      - cmd: rm -f {{.SVID_API_DIR}}/client/svid-client{{exeExt}}
+        platforms: [linux, darwin]
+      - cmd: if exist "{{.SVID_API_DIR}}\server\svid-server{{exeExt}}" del /f "{{.SVID_API_DIR}}\server\svid-server{{exeExt}}"
+        platforms: [windows]
+      - cmd: if exist "{{.SVID_API_DIR}}\client\svid-client{{exeExt}}" del /f "{{.SVID_API_DIR}}\client\svid-client{{exeExt}}"
+        platforms: [windows]
 
   lint:
     desc: Run Go linter

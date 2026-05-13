@@ -4,10 +4,19 @@
 $ErrorActionPreference = "Stop"
 
 $ScenarioRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$provisionScript = Join-Path $PSScriptRoot "provision-agent.ps1"
+$agentKeyPath = Join-Path $ScenarioRoot "spire" "agent" "agent.key.pem"
+$agentCertPath = Join-Path $ScenarioRoot "spire" "agent" "agent.crt.pem"
+$caCertPath = Join-Path $ScenarioRoot "spire" "server" "agent-cacert.pem"
 Push-Location $ScenarioRoot
 
 try {
     Write-Host "Starting metrics scenario..." -ForegroundColor Cyan
+
+    if (-not (Test-Path $agentKeyPath) -or -not (Test-Path $agentCertPath) -or -not (Test-Path $caCertPath)) {
+        Write-Host "Agent credentials not found. Running provisioning first..." -ForegroundColor Yellow
+        & $provisionScript
+    }
 
     # Start the compose stack
     podman-compose up -d

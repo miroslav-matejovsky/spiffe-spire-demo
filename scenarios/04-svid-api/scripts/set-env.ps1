@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 $ScenarioRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
-$RepoRoot = Resolve-Path (Join-Path $ScenarioRoot "..\..")
+$RepoRoot = Resolve-Path (Join-Path $ScenarioRoot '..' '..')
 Push-Location $ScenarioRoot
 
 try {
@@ -9,8 +9,10 @@ try {
 
     # Build Go services from the repo root so the Dockerfiles can use go.mod and go.sum
     Write-Host "Building Go services..." -ForegroundColor Yellow
-    podman build -t spiffe-spire-demo-svid-server:local -f "$RepoRoot\scenarios\04-svid-api\server\Dockerfile" $RepoRoot
-    podman build -t spiffe-spire-demo-svid-client:local -f "$RepoRoot\scenarios\04-svid-api\client\Dockerfile" $RepoRoot
+    $serverDockerfile = Join-Path $RepoRoot 'scenarios' '04-svid-api' 'server' 'Dockerfile'
+    $clientDockerfile = Join-Path $RepoRoot 'scenarios' '04-svid-api' 'client' 'Dockerfile'
+    podman build -t spiffe-spire-demo-svid-server:local -f $serverDockerfile $RepoRoot
+    podman build -t spiffe-spire-demo-svid-client:local -f $clientDockerfile $RepoRoot
 
     # Start SPIRE server first
     podman-compose up -d spire-server

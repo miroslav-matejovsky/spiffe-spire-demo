@@ -53,22 +53,29 @@ func main() {
 	// Call the server in a loop to demonstrate ongoing mTLS communication
 	for i := 1; ; i++ {
 		log.Printf("--- Request #%d ---", i)
-		resp, err := client.Get(serverURL)
-		if err != nil {
-			log.Printf("Error calling server: %v", err)
-			time.Sleep(5 * time.Second)
-			continue
+		if err := doRequest(client, serverURL); err != nil {
+			log.Printf("%v", err)
 		}
-
-		body, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-
-		fmt.Printf("Response (status %d):\n%s\n", resp.StatusCode, string(body))
-
 		if i >= 5 {
 			log.Println("Completed 5 requests. Client done.")
 			break
 		}
 		time.Sleep(10 * time.Second)
 	}
+}
+
+func doRequest(client *http.Client, serverURL string) error {
+	resp, err := client.Get(serverURL)
+	if err != nil {
+		return fmt.Errorf("error calling server: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("error reading response body: %w", err)
+	}
+
+	fmt.Printf("Response (status %d):\n%s\n", resp.StatusCode, string(body))
+	return nil
 }
