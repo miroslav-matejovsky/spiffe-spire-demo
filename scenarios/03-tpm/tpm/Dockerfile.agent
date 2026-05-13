@@ -1,0 +1,9 @@
+FROM ghcr.io/spiffe/spire-agent:1.14.5
+
+USER root
+
+RUN mkdir -p /opt/spire/conf/agent /opt/spire/data/agent /opt/spire/sockets
+
+# This image stays minimal for the runnable x509pop-based demo.
+# A real swtpm+tpm_devid lab would add swtpm and tpm2-tools here.
+ENTRYPOINT ["/opt/spire/bin/spire-agent"]
