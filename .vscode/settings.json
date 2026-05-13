@@ -64,6 +64,8 @@
     }
   ],
   "cSpell.words": [
-    "spiffe"
+    "graphiteapp",
+    "spiffe",
+    "statsd"
   ]
 }
