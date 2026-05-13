@@ -1,0 +1,69 @@
+{
+  "window.title": "${rootName}",
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000,
+  "editor.minimap.enabled": false,
+  "editor.renderWhitespace": "all",
+  "editor.renderControlCharacters": true,
+  "editor.formatOnSave": true,
+  "editor.wordWrap": "off",
+  "editor.tabSize": 2,
+  "editor.fontSize": 13,
+  "editor.fontFamily": "MesloLGS Nerd Font",
+  "editor.acceptSuggestionOnEnter": "smart",
+  "search.exclude": {
+    "**/*.svg": true,
+    "docs/godocs/**": true
+  },
+  "chat.agentsControl.enabled": "hidden",
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "github.copilot.enable": {
+    "*": true,
+    "plaintext": true,
+    "markdown": true
+  },
+  "git.autofetch": false,
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  "git.branchProtection": [
+    "main"
+  ],
+  "workbench.startupEditor": "none",
+  "workbench.iconTheme": "vscode-icons",
+  "workbench.colorTheme": "Flexoki Dark",
+  "terminal.integrated.fontFamily": "MesloLGS Nerd Font Mono",
+  "terminal.integrated.fontSize": 14,
+  "terminal.integrated.profiles.windows": {
+    "pwsh": {
+      "source": "PowerShell",
+      "icon": "terminal-powershell"
+    }
+  },
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "terminal.integrated.suggest.enabled": false,
+  "powershell.startAutomatically": true,
+  "powershell.integratedConsole.showOnStartup": false,
+  "powershell.enableProfileLoading": true,
+  "gopls": {
+    "standaloneTags": [
+      "ignore",
+      "integration"
+    ]
+  },
+  "todo-tree.filtering.includeHiddenFiles": true,
+  "todo-tree.filtering.excludeGlobs": [
+    "**/.git/hooks/**"
+  ],
+  "vsicons.associations.folders": [
+    {
+      "icon": "tools",
+      "extensions": [
+        "tasks"
+      ],
+      "format": "svg"
+    }
+  ],
+  "cSpell.words": [
+    "spiffe"
+  ]
+}
