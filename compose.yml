@@ -1,21 +1,21 @@
 services:
-  # graphite-statsd:
-  #   image: graphiteapp/graphite-statsd:1.1.7-6
-  #   container_name: graphite
-  #   hostname: graphite-statsd
-  #   restart: always
-  #   ports:
-  #     - "80:80"
-  #     - "8125:8125/udp"
-  # prometheus:
-  #   image: prom/prometheus:v2.20.1
-  #   container_name: prometheus
-  #   hostname: prometheus
-  #   restart: always
-  #   volumes:
-  #     - ./prometheus:/etc/prometheus
-  #   ports:
-  #     - "9090:9090"
+  graphite-statsd:
+    image: graphiteapp/graphite-statsd:1.1.7-6
+    container_name: graphite
+    hostname: graphite-statsd
+    restart: always
+    ports:
+      - "80:80"
+      - "8125:8125/udp"
+  prometheus:
+    image: prom/prometheus:v2.20.1
+    container_name: prometheus
+    hostname: prometheus
+    restart: always
+    volumes:
+      - ./prometheus:/etc/prometheus
+    ports:
+      - "9090:9090"
   spire-server:
     image: ghcr.io/spiffe/spire-server:1.11.2
     hostname: spire-server
