@@ -1,0 +1,12 @@
+.env.ps1
+*.exe
+*.dll
+bin/
+
+.test-results/
+
+.local
+
+# github copilot stuff
+memory-chat
+pipeline-query

@@ -1,0 +1,12 @@
+*.go    text eol=lf
+go.mod  text eol=lf
+go.sum  text eol=lf
+*.ps1   text eol=lf
+*.hcl   text eol=lf
+*.yaml  text eol=lf
+*.yml   text eol=lf
+*.md    text eol=lf
+*.ini   text eol=lf
+*.txt   text eol=lf
+*.json  text eol=lf
+*.xml   text eol=lf
