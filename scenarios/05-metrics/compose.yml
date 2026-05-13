@@ -1,0 +1,32 @@
+services:
+  graphite-statsd:
+    image: graphiteapp/graphite-statsd:1.1.10-5
+    container_name: graphite
+    hostname: graphite-statsd
+    restart: always
+    ports:
+      - "8080:80"
+      - "8125:8125/udp"
+  prometheus:
+    image: prom/prometheus:v3.11.3
+    container_name: prometheus
+    hostname: prometheus
+    restart: always
+    volumes:
+      - ./prometheus:/etc/prometheus
+    ports:
+      - "9090:9090"
+  spire-server:
+    image: ghcr.io/spiffe/spire-server:1.14.5
+    hostname: spire-server
+    volumes:
+      - ./spire/server:/opt/spire/conf/server
+    command: ["-config", "/opt/spire/conf/server/server.conf"]
+  spire-agent:
+    image: ghcr.io/spiffe/spire-agent:1.14.5
+    depends_on: ["spire-server"]
+    hostname: spire-agent
+    volumes:
+      - ./spire/agent:/opt/spire/conf/agent
+      - /var/run/:/var/run/
+    command: ["-config", "/opt/spire/conf/agent/agent.conf"]

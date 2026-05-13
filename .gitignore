@@ -1,0 +1,17 @@
+.env.ps1
+*.exe
+*.dll
+bin/
+
+.test-results/
+
+.local
+
+# github copilot stuff
+memory-chat
+pipeline-query
+
+# Scenario 05 - generated agent credentials (created at runtime by provision-agent.ps1)
+scenarios/05-metrics/spire/agent/agent.key.pem
+scenarios/05-metrics/spire/agent/agent.crt.pem
+scenarios/05-metrics/spire/server/agent-cacert.pem
