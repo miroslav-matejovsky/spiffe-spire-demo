@@ -66,6 +66,7 @@
   "cSpell.words": [
     "Containerfile",
     "devid",
+    "drivername",
     "graphiteapp",
     "healthcheck",
     "LASTEXITCODE",
@@ -73,6 +74,7 @@
     "spiffe",
     "statsd",
     "svid",
-    "swtpm"
+    "swtpm",
+    "tornjak"
   ]
 }

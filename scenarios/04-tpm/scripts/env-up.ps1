@@ -86,9 +86,9 @@ try {
 
     Write-Step "Waiting for Tornjak backend to become ready..."
     $tornjakReady = $false
-    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+    for ($attempt = 1; $attempt -le  30; $attempt++) {
         try {
-            $response = Invoke-WebRequest -Uri "http://localhost:10000/api/debugserver" -UseBasicParsing -TimeoutSec 2 -ErrorAction SilentlyContinue
+            $response = Invoke-WebRequest -Uri "http://127.0.0.1:10000/api/tornjak/serverinfo" -UseBasicParsing -TimeoutSec 2 -ErrorAction SilentlyContinue
             if ($response.StatusCode -lt 500) {
                 $tornjakReady = $true
                 break
