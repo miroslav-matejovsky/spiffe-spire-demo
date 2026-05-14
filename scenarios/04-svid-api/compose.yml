@@ -19,7 +19,7 @@ services:
     image: spiffe-spire-demo-svid-server:local
     build:
       context: ../..
-      dockerfile: scenarios/04-svid-api/server/Dockerfile
+      dockerfile: scenarios/04-svid-api/server/Containerfile
     hostname: svid-server
     depends_on: ["spire-agent"]
     volumes:
@@ -31,7 +31,7 @@ services:
     image: spiffe-spire-demo-svid-client:local
     build:
       context: ../..
-      dockerfile: scenarios/04-svid-api/client/Dockerfile
+      dockerfile: scenarios/04-svid-api/client/Containerfile
     hostname: svid-client
     depends_on: ["svid-server"]
     volumes:

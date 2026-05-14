@@ -229,7 +229,7 @@ podman-compose logs -f spire-server
 ## Troubleshooting
 - **Client cannot connect to server** — check `podman-compose logs -f spire-agent` and confirm both workloads received SVIDs.
 - **No attested agent found** — wait a few more seconds after starting the agent, then rerun `register-workloads.ps1`.
-- **Wrong workload identity** — verify that the container UID in each Dockerfile matches the selector in `register-workloads.ps1`.
+- **Wrong workload identity** — verify that the container UID in each Containerfile matches the selector in `register-workloads.ps1`.
 - **Build fails with missing modules** — run `go mod tidy` at the repository root to refresh `go.sum`.
 
 ## Cleanup

@@ -66,7 +66,7 @@ unix:///opt/spire/sockets/workload_api.sock
 
 The socket is shared between SPIRE agent and Go containers via a named Docker volume (`workload-socket`).
 
-**Docker build context is the repository root**, not the scenario directory, so `go.mod`/`go.sum` are accessible. The Dockerfiles are at `scenarios/04-svid-api/{server,client}/Dockerfile`.
+**Docker build context is the repository root**, not the scenario directory, so `go.mod`/`go.sum` are accessible. The Containerfiles are at `scenarios/04-svid-api/{server,client}/Containerfile`.
 
 Workloads are authorized by unix UID selectors:
 - `svid-server` runs as UID `10001` → `spiffe://mirmat.org/svid-server`

@@ -7,12 +7,12 @@ Push-Location $ScenarioRoot
 try {
     Write-Host "Starting SVID API scenario..." -ForegroundColor Cyan
 
-    # Build Go services from the repo root so the Dockerfiles can use go.mod and go.sum
+    # Build Go services from the repo root so the Containerfiles can use go.mod and go.sum
     Write-Host "Building Go services..." -ForegroundColor Yellow
-    $serverDockerfile = Join-Path $RepoRoot 'scenarios' '04-svid-api' 'server' 'Dockerfile'
-    $clientDockerfile = Join-Path $RepoRoot 'scenarios' '04-svid-api' 'client' 'Dockerfile'
-    podman build -t spiffe-spire-demo-svid-server:local -f $serverDockerfile $RepoRoot
-    podman build -t spiffe-spire-demo-svid-client:local -f $clientDockerfile $RepoRoot
+    $serverContainerfile = Join-Path $RepoRoot 'scenarios' '04-svid-api' 'server' 'Containerfile'
+    $clientContainerfile = Join-Path $RepoRoot 'scenarios' '04-svid-api' 'client' 'Containerfile'
+    podman build -t spiffe-spire-demo-svid-server:local -f $serverContainerfile $RepoRoot
+    podman build -t spiffe-spire-demo-svid-client:local -f $clientContainerfile $RepoRoot
 
     # Start SPIRE server first
     podman-compose up -d spire-server
