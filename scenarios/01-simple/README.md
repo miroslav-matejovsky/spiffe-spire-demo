@@ -114,7 +114,7 @@ Because the helper script launches the agent with a runtime join token, the serv
 
 ```powershell
 podman-compose logs -f spire-server
-podman logs -f spire-simple-agent
+podman-compose logs -f spire-agent
 ```
 
 ### What Happened?
