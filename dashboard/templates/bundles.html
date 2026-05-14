@@ -1,0 +1,16 @@
+{{define "content"}}
+<div class="card">
+    <h2>Trust Bundle</h2>
+    {{with .Content}}
+    <table>
+        <tbody>
+            <tr><th>Trust Domain</th><td class="mono">{{.TrustDomain}}</td></tr>
+            <tr><th>X.509 Authorities</th><td>{{.X509Count}}</td></tr>
+            <tr><th>JWT Authorities</th><td>{{.JwtCount}}</td></tr>
+            <tr><th>Refresh Hint</th><td>{{.RefreshHint}}s</td></tr>
+            <tr><th>Sequence Number</th><td>{{.SequenceNumber}}</td></tr>
+        </tbody>
+    </table>
+    {{end}}
+</div>
+{{end}}

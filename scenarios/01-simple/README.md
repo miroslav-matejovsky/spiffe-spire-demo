@@ -1,6 +1,6 @@
 # Scenario 01 — Simple SPIRE Setup
 
-> **Complexity:** Beginner · **Next:** [02-workload](../02-workload/README.md)
+> **Complexity:** Beginner - **Next:** [02-dashboard](../02-dashboard/README.md)
 
 ## What You Will Learn
 
@@ -18,7 +18,7 @@ SPIFFE (Secure Production Identity Framework for Everyone) is an open standard f
 
 ### Trust Domains
 
-A trust domain is the root of a SPIFFE identity system. All identities inside the same trust domain share a common root of trust. The trust domain is represented as a hostname-like string, for example `example.org`.
+A trust domain is the root of a SPIFFE identity system. All identities inside the same trust domain share a common root of trust. The trust domain is represented as a hostname-like string, for example `mirmat.org`.
 
 ### SPIFFE IDs
 
@@ -28,7 +28,7 @@ Format:
 `spiffe://trust-domain/path`
 
 Example:
-`spiffe://example.org/myagent`
+`spiffe://mirmat.org/myagent`
 
 ### SVIDs (SPIFFE Verifiable Identity Documents)
 
@@ -78,8 +78,8 @@ This is convenient for learning and demos, but it is **not appropriate for produ
 - `compose.yml` defines the SPIRE Server and SPIRE Agent containers
 - `spire/server/server.conf` configures the SPIRE Server
 - `spire/agent/agent.conf` configures the SPIRE Agent
-- `scripts/set-env.ps1` starts the server, creates a join token, and launches the agent with that token
-- `scripts/clean-env.ps1` stops and removes the demo containers
+- `scripts/env-up.ps1` starts the server, creates a join token, and launches the agent with that token
+- `scripts/env-down.ps1` stops and removes the demo containers
 
 ## Running the Scenario
 
@@ -87,7 +87,7 @@ This is convenient for learning and demos, but it is **not appropriate for produ
 
 ```powershell
 cd scenarios/01-simple
-.\scripts\set-env.ps1
+.\scripts\env-up.ps1
 ```
 
 Use the helper script instead of `podman-compose up -d` directly, because the agent needs a freshly generated join token at startup.
@@ -106,7 +106,7 @@ The script performs these steps:
 podman-compose exec spire-server /opt/spire/bin/spire-server agent list
 ```
 
-You should see an attested agent in the `example.org` trust domain with attestation type `join_token`, typically something like `spiffe://example.org/spire/agent/join_token/<uuid>`.
+You should see an attested agent in the `mirmat.org` trust domain with attestation type `join_token`, typically something like `spiffe://mirmat.org/spire/agent/join_token/<uuid>`.
 
 ### View Logs
 
@@ -114,23 +114,23 @@ Because the helper script launches the agent with a runtime join token, the serv
 
 ```powershell
 podman-compose logs -f spire-server
-podman logs -f spire-simple-agent
+podman-compose logs -f spire-agent
 ```
 
 ### What Happened?
 
-1. The SPIRE Server started and initialized the trust domain `example.org`
+1. The SPIRE Server started and initialized the trust domain `mirmat.org`
 2. The server generated a one-time join token for the demo
 3. The SPIRE Agent started with `-joinToken <token>`
 4. The server validated the token and attested the agent using the `join_token` node attestor
-5. The agent is now trusted as a node in the `example.org` trust domain
+5. The agent is now trusted as a node in the `mirmat.org` trust domain
 
 ## Cleanup
 
 ```powershell
-.\scripts\clean-env.ps1
+.\scripts\env-down.ps1
 ```
 
 ---
 
-**Next:** [02-workload](../02-workload/README.md) — Learn how workloads get their own identities
+**Next:** [02-dashboard](../02-dashboard/README.md) — Add a read-only dashboard to inspect agents, entries, and trust bundles via the SPIRE server API

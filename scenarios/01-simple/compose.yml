@@ -1,5 +1,8 @@
+name: simple
+
 services:
   spire-server:
+    container_name: simple-spire-server
     image: ghcr.io/spiffe/spire-server:1.14.5
     hostname: spire-server
     volumes:
@@ -7,6 +10,7 @@ services:
     command: ["-config", "/opt/spire/conf/server/server.conf"]
 
   spire-agent:
+    container_name: simple-spire-agent
     image: ghcr.io/spiffe/spire-agent:1.14.5
     hostname: spire-agent
     depends_on: ["spire-server"]

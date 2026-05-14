@@ -1,16 +1,16 @@
 # Smoke test for SPIFFE/SPIRE demo scenarios
 # Tests basic functionality of a given scenario's podman-compose stack
 
+[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("01-simple", "02-workload", "03-tpm", "04-svid-api", "05-metrics")]
+    [ValidateSet("01-simple", "02-dashboard", "03-workload", "04-tpm", "05-svid-api", "06-metrics", "07-production")]
     [string]$Scenario,
-    [switch]$SkipStartup = $false,
-    [switch]$Verbose = $false
+    [switch]$SkipStartup = $false
 )
 
 $ErrorActionPreference = "Stop"
-$VerbosePreference = if ($Verbose) { "Continue" } else { "SilentlyContinue" }
+$VerbosePreference = if ($PSBoundParameters.ContainsKey("Verbose")) { "Continue" } else { "SilentlyContinue" }
 
 $TestsPassed = 0
 $TestsFailed = 0
@@ -36,7 +36,6 @@ function Test-Fail {
     if ($Message) { Write-Host "   $Message" -ForegroundColor Gray }
 }
 
-# Scenario-specific configuration
 $ScenarioConfig = @{
     "01-simple" = @{
         Name = "Simple SPIRE Setup"
@@ -45,32 +44,48 @@ $ScenarioConfig = @{
         PortMappings = @{}
         HealthChecks = @{}
     }
-    "02-workload" = @{
+    "02-dashboard" = @{
+        Name = "SPIRE Dashboard"
+        ContainerPatterns = @("spire-server", "spire-agent", "dashboard")
+        ConfigFiles = @("./spire/server/server.conf", "./spire/agent/agent.conf")
+        PortMappings = @{
+            "Dashboard" = "8080"
+        }
+        HealthChecks = @{}
+    }
+    "03-workload" = @{
         Name = "Workload Identity"
-        ContainerPatterns = @("spire-server", "spire-agent", "workload")
+        ContainerPatterns = @("spire-server", "spire-agent", "workload", "dashboard")
         ConfigFiles = @("./spire/server/server.conf", "./spire/agent/agent.conf")
-        PortMappings = @{}
+        PortMappings = @{
+            "Dashboard" = "8080"
+        }
         HealthChecks = @{}
     }
-    "03-tpm" = @{
+    "04-tpm" = @{
         Name = "TPM-Based Attestation"
-        ContainerPatterns = @("spire-server", "spire-agent")
+        ContainerPatterns = @("spire-server", "spire-agent", "dashboard")
         ConfigFiles = @("./spire/server/server.conf", "./spire/agent/agent.conf")
-        PortMappings = @{}
+        PortMappings = @{
+            "Dashboard" = "8080"
+        }
         HealthChecks = @{}
     }
-    "04-svid-api" = @{
+    "05-svid-api" = @{
         Name = "SVID-Based Service API"
-        ContainerPatterns = @("spire-server", "spire-agent", "svid-server", "svid-client")
+        ContainerPatterns = @("spire-server", "spire-agent", "svid-server", "svid-client", "dashboard")
         ConfigFiles = @("./spire/server/server.conf", "./spire/agent/agent.conf")
-        PortMappings = @{}
+        PortMappings = @{
+            "Dashboard" = "8080"
+        }
         HealthChecks = @{}
     }
-    "05-metrics" = @{
+    "06-metrics" = @{
         Name = "SPIRE Telemetry & Metrics"
-        ContainerPatterns = @("spire-server", "spire-agent", "prometheus", "graphite")
+        ContainerPatterns = @("spire-server", "spire-agent", "prometheus", "graphite", "dashboard")
         ConfigFiles = @("./spire/server/server.conf", "./spire/agent/agent.conf", "./prometheus/prometheus.yml")
         PortMappings = @{
+            "Dashboard" = "8090"
             "Graphite Web UI" = "8080"
             "Graphite StatsD" = "8125"
             "Prometheus Web UI" = "9090"
@@ -80,6 +95,20 @@ $ScenarioConfig = @{
             "Graphite" = @{ Container = "graphite"; URL = "http://localhost:80/"; Match = "Graphite|<html" }
         }
     }
+    "07-production" = @{
+        Name = "Production-Like Setup"
+        ContainerPatterns = @("spire-server", "spire-agent-1", "spire-agent-2", "workload-1", "workload-2", "dashboard", "prometheus", "graphite")
+        ConfigFiles = @("./spire/server/server.conf", "./spire/agent-1/agent.conf", "./spire/agent-2/agent.conf", "./prometheus/prometheus.yml")
+        PortMappings = @{
+            "Dashboard" = "8090"
+            "Prometheus" = "9090"
+            "Graphite" = "8080"
+        }
+        HealthChecks = @{
+            "Prometheus" = @{ Container = "production-prometheus"; URL = "http://localhost:9090/-/healthy"; Match = "Healthy" }
+            "Graphite" = @{ Container = "production-graphite"; URL = "http://localhost:80/"; Match = "Graphite|<html" }
+        }
+    }
 }
 
 $config = $ScenarioConfig[$Scenario]
@@ -87,7 +116,6 @@ $scenarioDir = Join-Path $PSScriptRoot '..' 'scenarios' $Scenario
 
 Write-Host "🔍 Smoke test for scenario: $($config.Name) ($Scenario)" -ForegroundColor Magenta
 
-# Test 1: Check if podman is available
 Write-TestHeader "Prerequisites"
 try {
     $podmanVersion = podman --version 2>&1
@@ -97,14 +125,12 @@ try {
     exit 1
 }
 
-# Test 2: Verify scenario directory exists
 if (-not (Test-Path (Join-Path $scenarioDir "compose.yml"))) {
     Test-Fail "Scenario directory" "compose.yml not found in $scenarioDir"
     exit 1
 }
 Test-Pass "Scenario directory" "compose.yml found in $scenarioDir"
 
-# Check for running containers from OTHER scenarios and warn
 Write-TestHeader "Running Scenario Detection"
 $runningContainers = podman ps --format "{{.Names}}" 2>&1 | Out-String
 $otherScenariosRunning = @()
@@ -129,15 +155,13 @@ if ($otherScenariosRunning.Count -gt 0) {
 }
 Test-Pass "Scenario detection" "Check complete"
 
-# Test 3: Start compose stack if requested
 Write-TestHeader "Compose Stack"
 Push-Location $scenarioDir
 try {
     if (-not $SkipStartup) {
         Write-Verbose "Starting compose stack..."
         try {
-            # Use the scenario's set-env.ps1 if it exists
-            $setEnvScript = Join-Path $scenarioDir 'scripts' 'set-env.ps1'
+            $setEnvScript = Join-Path $scenarioDir 'scripts' 'env-up.ps1'
             if (Test-Path $setEnvScript) {
                 & $setEnvScript
             } else {
@@ -154,7 +178,6 @@ try {
         Test-Pass "Compose stack startup" "Skipped (-SkipStartup)"
     }
 
-    # Test 4: Check if required containers are running
     $runningContainers = podman ps --format "{{.Names}}" 2>&1
     $allRunning = $true
     foreach ($pattern in $config.ContainerPatterns) {
@@ -168,10 +191,9 @@ try {
 
     if (-not $allRunning) {
         Write-Host "`nRunning containers:" -ForegroundColor Yellow
-        podman ps --format "table {{.Names}}\t{{.Status}}"
+        podman ps --format "table {{.Names}}`t{{.Status}}"
     }
 
-    # Test 5: Health checks (scenario-specific)
     if ($config.HealthChecks.Count -gt 0) {
         Write-TestHeader "Service Health Checks"
         foreach ($check in $config.HealthChecks.GetEnumerator()) {
@@ -188,7 +210,6 @@ try {
         }
     }
 
-    # Test 6: Configuration files
     Write-TestHeader "Configuration Files"
     foreach ($file in $config.ConfigFiles) {
         if (Test-Path $file) {
@@ -198,12 +219,12 @@ try {
         }
     }
 
-    # Test 7: Port mappings (scenario-specific)
     if ($config.PortMappings.Count -gt 0) {
         Write-TestHeader "Port Mappings"
         foreach ($service in $config.PortMappings.GetEnumerator()) {
             $port = $service.Value
-            $containers = podman ps --format "{{.Ports}}" 2>&1 | Select-String $port
+            # Match host port binding specifically (e.g. "0.0.0.0:8090->") to avoid false positives
+            $containers = podman ps --format "{{.Ports}}" 2>&1 | Select-String ":${port}->"
             if ($containers) {
                 Test-Pass "Port $port mapped ($($service.Key))"
             } else {
@@ -215,7 +236,6 @@ try {
     Pop-Location
 }
 
-# Summary
 Write-TestHeader "Test Summary"
 $totalTests = $TestsPassed + $TestsFailed
 Write-Host "Scenario: $($config.Name) ($Scenario)" -ForegroundColor Cyan
