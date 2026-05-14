@@ -1,20 +1,18 @@
 $ErrorActionPreference = "Stop"
+$PSNativeCommandUseErrorActionPreference = $true
 
-$scenarioRoot = Split-Path -Parent $PSScriptRoot
-$scenarioName = Split-Path -Leaf $scenarioRoot
-$agentContainerName = "${scenarioName}_spire-agent_1"
+if (-not (Get-Command podman-compose -ErrorAction SilentlyContinue)) {
+    throw "podman-compose was not found on PATH. Install it and try again."
+}
 
-Push-Location $scenarioRoot
+$ScenarioRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+Push-Location $ScenarioRoot
+
 try {
-    Write-Host "Stopping simple SPIRE scenario..." -ForegroundColor Cyan
-
-    $existing = @(podman ps -a --format "{{.Names}}" 2>$null)
-    if ($existing -contains $agentContainerName) {
-        podman rm -f $agentContainerName *>$null
-    }
-
-    podman-compose down *>$null
-    Write-Host "Simple scenario stopped." -ForegroundColor Green
-} finally {
+    Write-Host "Stopping workload scenario..." -ForegroundColor Cyan
+    podman-compose down -v --remove-orphans *>$null
+    Write-Host "Workload scenario stopped." -ForegroundColor Green
+}
+finally {
     Pop-Location
 }

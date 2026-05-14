@@ -67,6 +67,8 @@
     "Containerfile",
     "devid",
     "graphiteapp",
+    "healthcheck",
+    "LASTEXITCODE",
     "mirmat",
     "spiffe",
     "statsd",

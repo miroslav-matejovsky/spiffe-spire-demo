@@ -6,7 +6,7 @@ $PSNativeCommandUseErrorActionPreference = $true
 
 $scenarioRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $scenarioName = Split-Path -Leaf $scenarioRoot
-$agentContainerName  = "${scenarioName}_spire-agent_1"
+$agentContainerName = "${scenarioName}_spire-agent_1"
 $serverContainerName = "${scenarioName}_spire-server_1"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot ".." ".." "..")).Path
 . (Join-Path $repoRoot "scripts" "logging.ps1")
