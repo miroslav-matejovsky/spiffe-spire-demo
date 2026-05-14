@@ -1,45 +1,70 @@
+[CmdletBinding()]
+param()
+
 # Set up the SPIRE metrics scenario
 # Starts all containers and waits for services to be ready
 
 $ErrorActionPreference = "Stop"
 
-$ScenarioRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$scenarioRoot    = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$scenarioName    = Split-Path -Leaf $scenarioRoot
 $provisionScript = Join-Path $PSScriptRoot "provision-agent.ps1"
-$agentKeyPath = Join-Path $ScenarioRoot "spire" "agent" "agent.key.pem"
-$agentCertPath = Join-Path $ScenarioRoot "spire" "agent" "agent.crt.pem"
-$caCertPath = Join-Path $ScenarioRoot "spire" "server" "agent-cacert.pem"
-Push-Location $ScenarioRoot
+$agentKeyPath    = Join-Path $scenarioRoot "spire" "agent" "agent.key.pem"
+$agentCertPath   = Join-Path $scenarioRoot "spire" "agent" "agent.crt.pem"
+$caCertPath      = Join-Path $scenarioRoot "spire" "server" "agent-cacert.pem"
+$repoRoot        = (Resolve-Path (Join-Path $PSScriptRoot ".." ".." "..")).Path
+. (Join-Path $repoRoot "scripts" "logging.ps1")
 
+Push-Location $scenarioRoot
 try {
-    Write-Host "Starting metrics scenario..." -ForegroundColor Cyan
+    Write-Step "Starting metrics scenario..."
 
     if (-not (Test-Path $agentKeyPath) -or -not (Test-Path $agentCertPath) -or -not (Test-Path $caCertPath)) {
-        Write-Host "Agent credentials not found. Running provisioning first..." -ForegroundColor Yellow
+        Write-Warn "Agent credentials not found. Running provisioning first..."
         & $provisionScript
     }
 
-    # Start the compose stack
+    Write-Step "Starting all containers..."
     podman-compose up -d
 
-    # Wait for services to start
-    Write-Host "Waiting for services to start..." -ForegroundColor Yellow
-    Start-Sleep -Seconds 10
-
-    # Verify containers are running
-    $containers = podman ps --format "{{.Names}}"
+    Write-Step "Waiting for services to start..."
     $required = @("prometheus", "graphite")
+    $missing  = @()
+
+    for ($attempt = 1; $attempt -le 10; $attempt++) {
+        Start-Sleep -Seconds 3
+        $containers = @(podman ps --format "{{.Names}}")
+        Write-Detail "attempt $attempt/10: running containers: $($containers -join ', ')"
+        $missing = $required | Where-Object { -not ($containers -match $_) }
+        if ($missing.Count -eq 0) { break }
+    }
 
     foreach ($name in $required) {
+        $containers = @(podman ps --format "{{.Names}}")
         if ($containers -match $name) {
-            Write-Host "  ✅ $name is running" -ForegroundColor Green
-        } else {
-            Write-Host "  ❌ $name is NOT running" -ForegroundColor Red
+            Write-Ok "$name is running"
+        }
+        else {
+            Write-Host "   ❌ $name is NOT running" -ForegroundColor Red
         }
     }
 
-    Write-Host "`nMetrics scenario is ready!" -ForegroundColor Green
-    Write-Host "  Prometheus: http://localhost:9090" -ForegroundColor Gray
-    Write-Host "  Graphite:   http://localhost:8080" -ForegroundColor Gray
+    if ($missing.Count -gt 0) {
+        throw "Required container(s) did not start: $($missing -join ', ')"
+    }
+
+    Write-Ok "Metrics scenario is ready!"
+    Write-Info "Prometheus: http://localhost:9090"
+    Write-Info "Graphite:   http://localhost:8080"
+}
+catch {
+    Write-Host "`n   ❌ Startup failed: $_" -ForegroundColor Red
+    Show-ContainerLogs "${scenarioName}_spire-server_1"
+    Show-ContainerLogs "${scenarioName}_spire-agent_1"
+    Show-ContainerLogs "${scenarioName}_prometheus_1"
+    Show-ContainerLogs "${scenarioName}_graphite_1"
+    Show-PodmanStatus
+    throw
 }
 finally {
     Pop-Location
