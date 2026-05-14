@@ -10,7 +10,7 @@ Push-Location $ScenarioRoot
 
 try {
     Write-Host "Stopping workload scenario..." -ForegroundColor Cyan
-    podman-compose down -v --remove-orphans *>$null
+    podman-compose down -v --remove-orphans
     Write-Host "Workload scenario stopped." -ForegroundColor Green
 }
 finally {
