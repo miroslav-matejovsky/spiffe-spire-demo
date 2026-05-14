@@ -129,12 +129,12 @@ prometheus:
 
 ## Run the Scenario
 
-Use the `set-env.ps1` script to run all the services that make up the scenario. The script starts the SPIRE Server, SPIRE Agent, Graphite-StatsD and Prometheus services.
+Use the `env-up.ps1` script to run all the services that make up the scenario. The script starts the SPIRE Server, SPIRE Agent, Graphite-StatsD and Prometheus services.
 
 Ensure that the current working directory is `scenarios/05-metrics/` and run:
 
 ```powershell
-.\scripts\set-env.ps1
+.\scripts\env-up.ps1
 ```
 
 Once the script is completed, in another terminal run the following command to review the logs from all the services:
@@ -186,7 +186,7 @@ The same metric but this time shown using Prometheus UI
 When you are finished running this tutorial, you can use the following PowerShell script to stop all the containers:
 
 ```powershell
-.\scripts\clean-env.ps1
+.\scripts\env-down.ps1
 ```
 
 ---

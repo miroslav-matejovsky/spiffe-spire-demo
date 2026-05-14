@@ -136,8 +136,8 @@ try {
     if (-not $SkipStartup) {
         Write-Verbose "Starting compose stack..."
         try {
-            # Use the scenario's set-env.ps1 if it exists
-            $setEnvScript = Join-Path $scenarioDir 'scripts' 'set-env.ps1'
+            # Use the scenario's env-up.ps1 if it exists
+            $setEnvScript = Join-Path $scenarioDir 'scripts' 'env-up.ps1'
             if (Test-Path $setEnvScript) {
                 & $setEnvScript
             } else {

@@ -1,12 +1,14 @@
 $ErrorActionPreference = "Stop"
 
 $scenarioRoot = Split-Path -Parent $PSScriptRoot
+$scenarioName = Split-Path -Leaf $scenarioRoot
+$agentContainerName = "${scenarioName}_spire-agent_1"
 
 Push-Location $scenarioRoot
 try {
     Write-Host "Starting simple SPIRE scenario..." -ForegroundColor Cyan
 
-    podman-compose up -d spire-server | Out-Null
+    podman-compose up -d spire-server *>$null
 
     Write-Host "Waiting for SPIRE server..." -ForegroundColor Yellow
     $serverReady = $false
@@ -40,9 +42,16 @@ try {
         throw "Failed to generate a join token.`n$tokenOutput"
     }
 
+    # Remove any leftover agent container from a previous run
+    $existing = @(podman ps -a --format "{{.Names}}" 2>$null)
+    if ($existing -contains $agentContainerName) {
+        podman rm -f $agentContainerName *>$null
+    }
+
     Write-Host "Starting SPIRE agent with join token..." -ForegroundColor Yellow
-    $env:SPIRE_AGENT_JOIN_TOKEN = $token
-    podman-compose up -d spire-agent | Out-Null
+    podman-compose run -d --name $agentContainerName spire-agent `
+        -config /opt/spire/conf/agent/agent.conf `
+        -joinToken $token *>$null
 
     Write-Host "Waiting for agent attestation..." -ForegroundColor Yellow
     $agentListOutput = ""
@@ -63,9 +72,8 @@ try {
     Write-Host "`nRegistered agents:" -ForegroundColor Cyan
     Write-Host $agentListOutput.Trim()
     Write-Host "`nSimple scenario is ready!" -ForegroundColor Green
-    Write-Host "  Server service: spire-server" -ForegroundColor Gray
-    Write-Host "  Agent service:  spire-agent" -ForegroundColor Gray
+    Write-Host "  Server:  $($scenarioName)_spire-server_1" -ForegroundColor Gray
+    Write-Host "  Agent:   $agentContainerName" -ForegroundColor Gray
 } finally {
-    Remove-Item Env:SPIRE_AGENT_JOIN_TOKEN -ErrorAction SilentlyContinue
     Pop-Location
 }

@@ -12,7 +12,7 @@ services:
     volumes:
       - ./spire/agent:/opt/spire/conf/agent
       - shared-socket:/opt/spire/sockets
-    command: ["-config", "/opt/spire/conf/agent/agent.conf", "-joinToken", "${SPIRE_AGENT_JOIN_TOKEN}"]
+    command: ["-config", "/opt/spire/conf/agent/agent.conf"]
   workload:
     image: ghcr.io/spiffe/spire-agent:1.14.5
     hostname: workload

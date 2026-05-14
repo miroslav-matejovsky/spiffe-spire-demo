@@ -80,7 +80,7 @@ Open a PowerShell terminal in `scenarios\02-workload\` and run the following ste
 ### 1. Start the server, attest the agent, and launch the workload
 
 ```powershell
-.\scripts\set-env.ps1
+.\scripts\env-up.ps1
 ```
 
 What this script does:
@@ -143,7 +143,7 @@ Look for the URI Subject Alternative Name containing `spiffe://mirmat.org/mywork
 When you are done, stop and remove the containers and volumes:
 
 ```powershell
-.\scripts\clean-env.ps1
+.\scripts\env-down.ps1
 ```
 
 ---

@@ -34,7 +34,7 @@ For each scenario, the smoke test checks:
 1. **Prerequisites** — Podman CLI availability
 2. **Scenario Directory** — compose.yml present
 3. **Running Scenario Detection** — Warns if containers from another scenario are running
-4. **Compose Stack** — Starts containers using the scenario's `set-env.ps1` script
+4. **Compose Stack** — Starts containers using the scenario's `env-up.ps1` script
 5. **Container Status** — Verifies all required containers are running
 6. **Health Checks** — Scenario-specific endpoint checks (e.g., Prometheus, Graphite)
 7. **Configuration Files** — Verifies SPIRE configs exist

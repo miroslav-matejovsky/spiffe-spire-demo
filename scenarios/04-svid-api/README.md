@@ -193,7 +193,7 @@ This is still a teaching shortcut. Production systems usually combine several se
 From `scenarios/04-svid-api`, run:
 
 ```powershell
-.\scripts\set-env.ps1
+.\scripts\env-up.ps1
 ```
 
 The script performs these steps for you:
@@ -234,7 +234,7 @@ podman-compose logs -f spire-server
 
 ## Cleanup
 ```powershell
-.\scripts\clean-env.ps1
+.\scripts\env-down.ps1
 ```
 
 ---

@@ -65,10 +65,12 @@
   ],
   "cSpell.words": [
     "Containerfile",
+    "devid",
     "graphiteapp",
     "mirmat",
     "spiffe",
     "statsd",
-    "svid"
+    "svid",
+    "swtpm"
   ]
 }

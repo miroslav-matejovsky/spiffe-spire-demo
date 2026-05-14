@@ -89,8 +89,8 @@ Real-world TPM mapping:
 - `spire/agent/agent.conf` — agent configuration using the generated DevID-like credentials
 - `tpm/Containerfile.agent` — optional extension point for a future `swtpm`-enabled agent image
 - `tpm/provision-tpm.ps1` — generates the CA, agent certificate, and agent private key
-- `scripts/set-env.ps1` — provisions credentials if needed and starts the scenario
-- `scripts/clean-env.ps1` — stops the scenario containers
+- `scripts/env-up.ps1` — provisions credentials if needed and starts the scenario
+- `scripts/env-down.ps1` — stops the scenario containers
 
 ## Prerequisites
 
@@ -123,7 +123,7 @@ This generates:
 ### 2. Start the environment
 
 ```powershell
-.\scripts\set-env.ps1
+.\scripts\env-up.ps1
 ```
 
 The script also auto-runs provisioning if the credentials are missing.
@@ -180,7 +180,7 @@ The live compose stack uses the official SPIRE agent image so the scenario stays
 When you are done:
 
 ```powershell
-.\scripts\clean-env.ps1
+.\scripts\env-down.ps1
 ```
 
 This stops the compose stack. Generated certificates are left in place so you can inspect them or restart quickly.

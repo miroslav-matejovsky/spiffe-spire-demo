@@ -40,15 +40,15 @@ scenarios/<N>-<name>/
 │   ├── server/server.conf
 │   └── agent/agent.conf
 └── scripts/
-    ├── set-env.ps1      # Start the stack
-    └── clean-env.ps1    # Tear down the stack
+    ├── env-up.ps1       # Start the stack
+    └── env-down.ps1     # Tear down the stack
 ```
 
 Scenario 04 also contains Go source in `server/` and `client/` subdirectories.
 
 ### How Scenarios Start
 
-**Always use `scripts/set-env.ps1` instead of `podman-compose up -d` directly.** Every scenario uses join token attestation: the agent requires a freshly generated one-time token from the server at startup. The `set-env.ps1` scripts:
+**Always use `scripts/env-up.ps1` instead of `podman-compose up -d` directly.** Every scenario uses join token attestation: the agent requires a freshly generated one-time token from the server at startup. The `env-up.ps1` scripts:
 1. Start the SPIRE server and wait for it to become ready
 2. Generate a join token via `spire-server token generate`
 3. Start the SPIRE agent with `-joinToken <token>`
@@ -80,4 +80,4 @@ Workload registration happens in `scripts/register-workloads.ps1` using `spire-s
 - **SPIRE version** is `1.14.5` (pinned in all `compose.yml` files).
 - `insecure_bootstrap = true` is intentional in agent configs — required for join token demos, not for production.
 - Server configs use `KeyManager "memory"` and SQLite (`DataStore "sql"`) — data does not persist across restarts.
-- The SPIRE agent in all scenarios is started via `podman-compose up -d spire-agent` after setting `$env:SPIRE_AGENT_JOIN_TOKEN`. Container names follow the pattern `<scenario-folder-name>_<service>_1` for all services.
+- The SPIRE agent in scenarios 01 and 02 is started via `podman-compose run -d --name <scenario>_spire-agent_1` (join token passed as a direct CLI arg). Scenarios 03–05 use `podman-compose up`. Container names follow the pattern `<scenario-folder-name>_<service>_1`.

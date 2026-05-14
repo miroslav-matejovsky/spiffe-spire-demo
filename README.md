@@ -32,10 +32,10 @@ Work through the scenarios in order — each builds on concepts from the previou
 ```powershell
 # Start with the simplest scenario
 cd scenarios/01-simple
-.\scripts\set-env.ps1
+.\scripts\env-up.ps1
 
 # When done, clean up
-.\scripts\clean-env.ps1
+.\scripts\env-down.ps1
 ```
 
 ## Smoke Tests

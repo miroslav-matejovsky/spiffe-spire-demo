@@ -11,7 +11,7 @@ try {
     $agentList = podman-compose exec -T spire-server /opt/spire/bin/spire-server agent list 2>&1 | Out-String
     $agentID = [regex]::Match($agentList, '(spiffe://mirmat\.org/spire/agent/join_token/[a-f0-9\-]+)').Groups[1].Value
     if (-not $agentID) {
-        Write-Host "No attested agent found. Run set-env.ps1 first." -ForegroundColor Red
+        Write-Host "No attested agent found. Run env-up.ps1 first." -ForegroundColor Red
         exit 1
     }
     Write-Host "  Agent SPIFFE ID: $agentID" -ForegroundColor Gray

@@ -78,8 +78,8 @@ This is convenient for learning and demos, but it is **not appropriate for produ
 - `compose.yml` defines the SPIRE Server and SPIRE Agent containers
 - `spire/server/server.conf` configures the SPIRE Server
 - `spire/agent/agent.conf` configures the SPIRE Agent
-- `scripts/set-env.ps1` starts the server, creates a join token, and launches the agent with that token
-- `scripts/clean-env.ps1` stops and removes the demo containers
+- `scripts/env-up.ps1` starts the server, creates a join token, and launches the agent with that token
+- `scripts/env-down.ps1` stops and removes the demo containers
 
 ## Running the Scenario
 
@@ -87,7 +87,7 @@ This is convenient for learning and demos, but it is **not appropriate for produ
 
 ```powershell
 cd scenarios/01-simple
-.\scripts\set-env.ps1
+.\scripts\env-up.ps1
 ```
 
 Use the helper script instead of `podman-compose up -d` directly, because the agent needs a freshly generated join token at startup.
@@ -128,7 +128,7 @@ podman logs -f spire-simple-agent
 ## Cleanup
 
 ```powershell
-.\scripts\clean-env.ps1
+.\scripts\env-down.ps1
 ```
 
 ---
