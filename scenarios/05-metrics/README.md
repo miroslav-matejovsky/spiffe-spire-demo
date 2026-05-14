@@ -77,7 +77,7 @@ By configuring the address, SPIRE will be pushing metrics to the StatsD collecto
 
 ##  Graphite & StatsD Configuration
 
-We use the official Docker image for Graphite and StatsD. This image already contains all the services necessary to collect and display metrics. For this tutorial we map the port `80` that belongs to the nginx proxy that reverse proxies the Graphite dashboard to host port `8080`, and the port `8125` where StatsD listens by default to the same external port.
+We use the official container image for Graphite and StatsD. This image already contains all the services necessary to collect and display metrics. For this tutorial we map the port `80` that belongs to the nginx proxy that reverse proxies the Graphite dashboard to host port `8080`, and the port `8125` where StatsD listens by default to the same external port.
 The `graphite-statsd` service definition is:
 
 ```console
@@ -112,7 +112,7 @@ scrape_configs:
     - targets: ['spire-agent:8089']
 ```
 
-To run Prometheus we use the official Docker image and we mount the local directory `prometheus` to make the [prometheus.yml](prometheus/prometheus.yml) configuration file available at the container.
+To run Prometheus we use the official container image and we mount the local directory `prometheus` to make the [prometheus.yml](prometheus/prometheus.yml) configuration file available at the container.
 
 ```console
 prometheus:

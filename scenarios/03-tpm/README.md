@@ -87,7 +87,7 @@ Real-world TPM mapping:
 - `compose.yml` — starts SPIRE Server and SPIRE Agent with the runnable `x509pop` setup
 - `spire/server/server.conf` — server configuration with `x509pop` NodeAttestor
 - `spire/agent/agent.conf` — agent configuration using the generated DevID-like credentials
-- `tpm/Dockerfile.agent` — optional extension point for a future `swtpm`-enabled agent image
+- `tpm/Containerfile.agent` — optional extension point for a future `swtpm`-enabled agent image
 - `tpm/provision-tpm.ps1` — generates the CA, agent certificate, and agent private key
 - `scripts/set-env.ps1` — provisions credentials if needed and starts the scenario
 - `scripts/clean-env.ps1` — stops the scenario containers
@@ -166,9 +166,9 @@ In a real TPM deployment, steps 1 and 4 would be TPM-aware:
 | Demo complexity | Low | Higher |
 | Production suitability | Limited | Stronger |
 
-## Why `tpm\Dockerfile.agent` Is Still Included
+## Why `tpm\Containerfile.agent` Is Still Included
 
-The live compose stack uses the official SPIRE agent image so the scenario stays portable. The `tpm\Dockerfile.agent` file is included as the obvious place to evolve this demo into a richer lab. In a more advanced version, that image is where you would add:
+The live compose stack uses the official SPIRE agent image so the scenario stays portable. The `tpm\Containerfile.agent` file is included as the obvious place to evolve this demo into a richer lab. In a more advanced version, that image is where you would add:
 
 - `swtpm`
 - `tpm2-tools`

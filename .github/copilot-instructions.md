@@ -52,7 +52,7 @@ Scenario 04 also contains Go source in `server/` and `client/` subdirectories.
 1. Start the SPIRE server and wait for it to become ready
 2. Generate a join token via `spire-server token generate`
 3. Start the SPIRE agent with `-joinToken <token>`
-4. For scenario 04: also build Docker images and register workload entries
+4. For scenario 04: also build container images and register workload entries
 
 Only one scenario should be running at a time — containers share names that can conflict.
 
@@ -64,9 +64,9 @@ The `svid-server` and `svid-client` binaries use [go-spiffe v2](https://github.c
 unix:///opt/spire/sockets/workload_api.sock
 ```
 
-The socket is shared between SPIRE agent and Go containers via a named Docker volume (`workload-socket`).
+The socket is shared between SPIRE agent and Go containers via a named volume (`workload-socket`).
 
-**Docker build context is the repository root**, not the scenario directory, so `go.mod`/`go.sum` are accessible. The Containerfiles are at `scenarios/04-svid-api/{server,client}/Containerfile`.
+**Container build context is the repository root**, not the scenario directory, so `go.mod`/`go.sum` are accessible. The Containerfiles are at `scenarios/04-svid-api/{server,client}/Containerfile`.
 
 Workloads are authorized by unix UID selectors:
 - `svid-server` runs as UID `10001` → `spiffe://mirmat.org/svid-server`
