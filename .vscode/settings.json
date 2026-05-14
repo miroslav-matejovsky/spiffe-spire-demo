@@ -67,13 +67,17 @@
     "Containerfile",
     "devid",
     "drivername",
+    "genproto",
     "graphiteapp",
     "healthcheck",
     "LASTEXITCODE",
+    "matejovsky",
     "mirmat",
+    "miroslav",
     "spiffe",
     "statsd",
     "svid",
-    "swtpm"
+    "swtpm",
+    "winio"
   ]
 }
