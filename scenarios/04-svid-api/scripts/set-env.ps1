@@ -20,7 +20,7 @@ try {
     Start-Sleep -Seconds 5
 
     # Generate join token and start agent
-    $tokenOutput = podman-compose exec -T spire-server /opt/spire/bin/spire-server token generate -spiffeID spiffe://example.org/myagent 2>&1 | Out-String
+    $tokenOutput = podman-compose exec -T spire-server /opt/spire/bin/spire-server token generate -spiffeID spiffe://mirmat.org/myagent 2>&1 | Out-String
     $token = [regex]::Match($tokenOutput, 'Token:\s+(\S+)').Groups[1].Value
     if (-not $token) {
         Write-Host "Failed to generate token. Output: $tokenOutput" -ForegroundColor Red

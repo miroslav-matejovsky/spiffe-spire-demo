@@ -52,7 +52,7 @@ Authentication answers **who are you?** Authorization answers **are you allowed 
 
 After the TLS handshake completes, the peer certificate has already been validated against the trust bundle. At that point your application can apply authorization rules based on the peer SPIFFE ID.
 
-The demo uses `AuthorizeMemberOf(td)`, which means "accept any workload in the `example.org` trust domain." That keeps the first example easy to understand. In real systems you often narrow this further:
+The demo uses `AuthorizeMemberOf(td)`, which means "accept any workload in the `mirmat.org` trust domain." That keeps the first example easy to understand. In real systems you often narrow this further:
 
 - `AuthorizeID(id)` — allow exactly one workload identity.
 - `AuthorizeOneOf(...)` — allow a small set of identities.
@@ -64,7 +64,7 @@ The demo uses `AuthorizeMemberOf(td)`, which means "accept any workload in the `
 │   svid-client    │──────────────►│   svid-server    │
 │                  │               │                  │
 │ SPIFFE ID:       │               │ SPIFFE ID:       │
-│ spiffe://example │               │ spiffe://example │
+│ spiffe://mirmat  │               │ spiffe://mirmat  │
 │ .org/svid-client │               │ .org/svid-server │
 └────────┬─────────┘               └────────┬─────────┘
          │                                  │
@@ -83,7 +83,7 @@ The demo uses `AuthorizeMemberOf(td)`, which means "accept any workload in the `
          │   SPIRE Server     │
          │                    │
          │ Trust domain:      │
-         │ example.org        │
+         │ mirmat.org         │
          └────────────────────┘
 ```
 
@@ -115,9 +115,9 @@ The server logs its SPIFFE ID so you can see exactly which identity SPIRE issued
 
 #### 3. Define the trust domain
 ```go
-td, err := spiffeid.TrustDomainFromString("example.org")
+td, err := spiffeid.TrustDomainFromString("mirmat.org")
 ```
-A trust domain is the administrative boundary of SPIFFE identities. `spiffe://example.org/...` means the identity belongs to the `example.org` trust domain.
+A trust domain is the administrative boundary of SPIFFE identities. `spiffe://mirmat.org/...` means the identity belongs to the `mirmat.org` trust domain.
 
 #### 4. Build an mTLS server config
 ```go

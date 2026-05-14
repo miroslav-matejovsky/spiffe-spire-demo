@@ -47,7 +47,7 @@ try {
 
     for ($attempt = 1; $attempt -le 15; $attempt++) {
         $agentList = podman exec $serverContainer /opt/spire/bin/spire-server agent list 2>&1
-        if ($LASTEXITCODE -eq 0 -and ($agentList -match "spiffe://example.org" -or $agentList -match "x509pop")) {
+        if ($LASTEXITCODE -eq 0 -and ($agentList -match "spiffe://mirmat.org" -or $agentList -match "x509pop")) {
             $attested = $true
             break
         }

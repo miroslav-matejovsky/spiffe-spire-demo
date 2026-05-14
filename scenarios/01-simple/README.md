@@ -18,7 +18,7 @@ SPIFFE (Secure Production Identity Framework for Everyone) is an open standard f
 
 ### Trust Domains
 
-A trust domain is the root of a SPIFFE identity system. All identities inside the same trust domain share a common root of trust. The trust domain is represented as a hostname-like string, for example `example.org`.
+A trust domain is the root of a SPIFFE identity system. All identities inside the same trust domain share a common root of trust. The trust domain is represented as a hostname-like string, for example `mirmat.org`.
 
 ### SPIFFE IDs
 
@@ -28,7 +28,7 @@ Format:
 `spiffe://trust-domain/path`
 
 Example:
-`spiffe://example.org/myagent`
+`spiffe://mirmat.org/myagent`
 
 ### SVIDs (SPIFFE Verifiable Identity Documents)
 
@@ -106,7 +106,7 @@ The script performs these steps:
 podman-compose exec spire-server /opt/spire/bin/spire-server agent list
 ```
 
-You should see an attested agent in the `example.org` trust domain with attestation type `join_token`, typically something like `spiffe://example.org/spire/agent/join_token/<uuid>`.
+You should see an attested agent in the `mirmat.org` trust domain with attestation type `join_token`, typically something like `spiffe://mirmat.org/spire/agent/join_token/<uuid>`.
 
 ### View Logs
 
@@ -119,11 +119,11 @@ podman logs -f spire-simple-agent
 
 ### What Happened?
 
-1. The SPIRE Server started and initialized the trust domain `example.org`
+1. The SPIRE Server started and initialized the trust domain `mirmat.org`
 2. The server generated a one-time join token for the demo
 3. The SPIRE Agent started with `-joinToken <token>`
 4. The server validated the token and attested the agent using the `join_token` node attestor
-5. The agent is now trusted as a node in the `example.org` trust domain
+5. The agent is now trusted as a node in the `mirmat.org` trust domain
 
 ## Cleanup
 

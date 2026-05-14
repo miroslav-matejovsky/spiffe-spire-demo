@@ -150,16 +150,16 @@ Let's see some real data. Open your browser and navigate to `http://localhost:80
 To generate some data, let's create a workload registration entry:
 
 ```powershell
-podman exec -it spiffe-spire-demo_spire-server_1 /opt/spire/bin/spire-server entry create `
-    -spiffeID spiffe://example.org/myworkload `
-    -parentID spiffe://example.org/myagent `
+podman exec -it 05-metrics_spire-server_1 /opt/spire/bin/spire-server entry create `
+    -spiffeID spiffe://mirmat.org/myworkload `
+    -parentID spiffe://mirmat.org/myagent `
     -selector unix:uid:1000
 ```
 
 And with this command we perform a request to fetch an SVID for that new workload. This request will serve to generate some metrics:
 
 ```powershell
-podman exec -it spiffe-spire-demo_spire-agent_1 /opt/spire/bin/spire-agent api fetch x509 `
+podman exec -it 05-metrics_spire-agent_1 /opt/spire/bin/spire-agent api fetch x509 `
     -socketPath /opt/spire/sockets/workload_api.sock
 ```
 

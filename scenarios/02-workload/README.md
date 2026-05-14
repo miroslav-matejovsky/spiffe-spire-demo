@@ -23,7 +23,7 @@ A workload does not automatically receive an identity just because it can reach 
 2. the parent identity that is allowed to request it
 3. one or more selectors that describe the workload
 
-In this scenario the registration happens with `spire-server entry create`. The entry says: when the attested agent identified by the given `parentID` asks for a workload whose selectors include `unix:uid:0`, issue `spiffe://example.org/myworkload`.
+In this scenario the registration happens with `spire-server entry create`. The entry says: when the attested agent identified by the given `parentID` asks for a workload whose selectors include `unix:uid:0`, issue `spiffe://mirmat.org/myworkload`.
 
 ### Workload Attestation
 
@@ -100,7 +100,7 @@ What this script does:
 
 This creates a registration entry with:
 
-- **SPIFFE ID:** `spiffe://example.org/myworkload`
+- **SPIFFE ID:** `spiffe://mirmat.org/myworkload`
 - **Parent ID:** the attested agent discovered from `agent list`
 - **Selector:** `unix:uid:0`
 
@@ -112,7 +112,7 @@ This is the policy step. Until this entry exists, the workload has access to the
 .\scripts\fetch-svid.ps1
 ```
 
-The workload container started earlier is already watching the Workload API over the shared socket. After the registration entry exists, the SPIRE Agent evaluates the caller, matches the `unix:uid:0` selector, and streams the X.509-SVID for `spiffe://example.org/myworkload` to that workload. This script prints the successful fetch from the workload container logs.
+The workload container started earlier is already watching the Workload API over the shared socket. After the registration entry exists, the SPIRE Agent evaluates the caller, matches the `unix:uid:0` selector, and streams the X.509-SVID for `spiffe://mirmat.org/myworkload` to that workload. This script prints the successful fetch from the workload container logs.
 
 ## Inspecting the SVID
 
@@ -136,7 +136,7 @@ A typical follow-up inspection command is:
 openssl x509 -in myworkload_svid.pem -text -noout
 ```
 
-Look for the URI Subject Alternative Name containing `spiffe://example.org/myworkload`.
+Look for the URI Subject Alternative Name containing `spiffe://mirmat.org/myworkload`.
 
 ## Cleanup
 

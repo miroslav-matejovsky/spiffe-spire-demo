@@ -14,7 +14,7 @@ try {
 
     # Generate join token
     Write-Host "Generating join token..." -ForegroundColor Yellow
-    $tokenOutput = podman-compose exec -T spire-server /opt/spire/bin/spire-server token generate -spiffeID spiffe://example.org/myagent 2>&1 | Out-String
+    $tokenOutput = podman-compose exec -T spire-server /opt/spire/bin/spire-server token generate -spiffeID spiffe://mirmat.org/myagent 2>&1 | Out-String
     $token = [regex]::Match($tokenOutput, 'Token:\s+(\S+)').Groups[1].Value
     if (-not $token) {
         Write-Host "Failed to generate join token. Output: $tokenOutput" -ForegroundColor Red
@@ -24,7 +24,8 @@ try {
 
     # Start agent with join token
     Write-Host "Starting SPIRE agent..." -ForegroundColor Yellow
-    podman-compose run -d --name 02-workload_spire-agent_1 --entrypoint /opt/spire/bin/spire-agent spire-agent run -config /opt/spire/conf/agent/agent.conf -joinToken $token | Out-Null
+    $env:SPIRE_AGENT_JOIN_TOKEN = $token
+    podman-compose up -d spire-agent | Out-Null
 
     # Wait for agent attestation before starting the workload container
     Write-Host "Waiting for agent attestation..." -ForegroundColor Yellow
@@ -33,7 +34,7 @@ try {
     for ($attempt = 1; $attempt -le 15; $attempt++) {
         Start-Sleep -Seconds 2
         $agentList = podman-compose exec -T spire-server /opt/spire/bin/spire-server agent list 2>&1 | Out-String
-        if ($agentList -match 'spiffe://example\.org/spire/agent/join_token/[a-f0-9\-]+') {
+        if ($agentList -match 'spiffe://mirmat\.org/spire/agent/join_token/[a-f0-9\-]+') {
             $agentReady = $true
             break
         }
@@ -57,5 +58,6 @@ try {
     Write-Host "  Next: Run .\scripts\register-workload.ps1 to register a workload" -ForegroundColor Gray
 }
 finally {
+    Remove-Item Env:SPIRE_AGENT_JOIN_TOKEN -ErrorAction SilentlyContinue
     Pop-Location
 }

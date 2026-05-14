@@ -34,7 +34,7 @@ func main() {
 	}
 	log.Printf("Client SPIFFE ID: %s", svid.ID)
 
-	td, err := spiffeid.TrustDomainFromString("example.org")
+	td, err := spiffeid.TrustDomainFromString("mirmat.org")
 	if err != nil {
 		log.Fatalf("Unable to parse trust domain: %v", err)
 	}

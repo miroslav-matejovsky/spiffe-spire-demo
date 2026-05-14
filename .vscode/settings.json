@@ -25,7 +25,9 @@
   "git.autofetch": false,
   "git.enableSmartCommit": true,
   "git.confirmSync": false,
-  "git.branchProtection": ["main"],
+  "git.branchProtection": [
+    "main"
+  ],
   "workbench.startupEditor": "none",
   "workbench.iconTheme": "vscode-icons",
   "workbench.colorTheme": "Flexoki Dark",
@@ -43,16 +45,29 @@
   "powershell.integratedConsole.showOnStartup": false,
   "powershell.enableProfileLoading": true,
   "gopls": {
-    "standaloneTags": ["ignore", "integration"]
+    "standaloneTags": [
+      "ignore",
+      "integration"
+    ]
   },
   "todo-tree.filtering.includeHiddenFiles": true,
-  "todo-tree.filtering.excludeGlobs": ["**/.git/hooks/**"],
+  "todo-tree.filtering.excludeGlobs": [
+    "**/.git/hooks/**"
+  ],
   "vsicons.associations.folders": [
     {
       "icon": "tools",
-      "extensions": ["tasks"],
+      "extensions": [
+        "tasks"
+      ],
       "format": "svg"
     }
   ],
-  "cSpell.words": ["graphiteapp", "spiffe", "statsd", "svid"]
+  "cSpell.words": [
+    "graphiteapp",
+    "mirmat",
+    "spiffe",
+    "statsd",
+    "svid"
+  ]
 }
