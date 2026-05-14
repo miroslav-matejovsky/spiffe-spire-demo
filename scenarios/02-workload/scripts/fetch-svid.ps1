@@ -7,8 +7,8 @@ Push-Location $ScenarioRoot
 try {
     Write-Host "Reading SVID fetched by the workload container..." -ForegroundColor Cyan
 
-    $workloadContainer = podman ps --filter label=io.podman.compose.project=02-workload --filter label=io.podman.compose.service=workload --format "{{.ID}}" | Select-Object -First 1
-    if (-not $workloadContainer) {
+    $workloadContainer = "workload-workload"
+    if (-not (podman ps --filter "name=^workload-workload$" --format "{{.Names}}" 2>$null)) {
         Write-Host "Workload container is not running. Run env-up.ps1 first." -ForegroundColor Red
         exit 1
     }

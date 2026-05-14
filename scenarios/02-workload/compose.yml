@@ -1,11 +1,15 @@
+name: workload
+
 services:
   spire-server:
+    container_name: workload-spire-server
     image: ghcr.io/spiffe/spire-server:1.14.5
     hostname: spire-server
     volumes:
       - ./spire/server:/opt/spire/conf/server
     command: ["-config", "/opt/spire/conf/server/server.conf"]
   spire-agent:
+    container_name: workload-spire-agent
     image: ghcr.io/spiffe/spire-agent:1.14.5
     hostname: spire-agent
     depends_on: ["spire-server"]
@@ -14,10 +18,11 @@ services:
       - shared-socket:/opt/spire/sockets
     command: ["-config", "/opt/spire/conf/agent/agent.conf"]
   workload:
+    container_name: workload-workload
     image: ghcr.io/spiffe/spire-agent:1.14.5
     hostname: workload
     depends_on: ["spire-agent"]
-    pid: "container:02-workload_spire-agent_1"
+    pid: "container:workload-spire-agent"
     volumes:
       - shared-socket:/opt/spire/sockets
     entrypoint: ["/opt/spire/bin/spire-agent", "api", "watch", "-socketPath", "/opt/spire/sockets/workload_api.sock"]

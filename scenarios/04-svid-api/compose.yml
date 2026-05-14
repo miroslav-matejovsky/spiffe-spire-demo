@@ -1,5 +1,8 @@
+name: svid-api
+
 services:
   spire-server:
+    container_name: svid-api-spire-server
     image: ghcr.io/spiffe/spire-server:1.14.5
     hostname: spire-server
     volumes:
@@ -7,6 +10,7 @@ services:
     command: ["-config", "/opt/spire/conf/server/server.conf"]
 
   spire-agent:
+    container_name: svid-api-spire-agent
     image: ghcr.io/spiffe/spire-agent:1.14.5
     hostname: spire-agent
     depends_on: ["spire-server"]
@@ -16,6 +20,7 @@ services:
     command: ["-config", "/opt/spire/conf/agent/agent.conf", "-joinToken", "${SPIRE_AGENT_JOIN_TOKEN}"]
 
   svid-server:
+    container_name: svid-api-svid-server
     image: spiffe-spire-demo-svid-server:local
     build:
       context: ../..
@@ -28,6 +33,7 @@ services:
       - PORT=8443
 
   svid-client:
+    container_name: svid-api-svid-client
     image: spiffe-spire-demo-svid-client:local
     build:
       context: ../..

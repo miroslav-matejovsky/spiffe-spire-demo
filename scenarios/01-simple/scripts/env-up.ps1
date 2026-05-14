@@ -3,10 +3,10 @@ param()
 
 $ErrorActionPreference = "Stop"
 
-$scenarioRoot = Split-Path -Parent $PSScriptRoot
-$scenarioName = Split-Path -Leaf $scenarioRoot
-$agentContainerName = "${scenarioName}_spire-agent"
-$serverContainerName = "${scenarioName}_spire-server"
+$scenarioRoot        = Split-Path -Parent $PSScriptRoot
+$scenarioName        = Split-Path -Leaf $scenarioRoot
+$serverContainerName = "simple-spire-server"
+$agentContainerName  = "simple-spire-agent"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot ".." ".." "..")).Path
 . (Join-Path $repoRoot "scripts" "logging.ps1")
 

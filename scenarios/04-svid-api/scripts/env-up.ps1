@@ -86,10 +86,10 @@ try {
 }
 catch {
     Write-Host "`n   ❌ Startup failed: $_" -ForegroundColor Red
-    Show-ContainerLogs "${scenarioName}_spire-server_1"
-    Show-ContainerLogs "${scenarioName}_spire-agent_1"
-    Show-ContainerLogs "${scenarioName}_svid-server_1"
-    Show-ContainerLogs "${scenarioName}_svid-client_1"
+    Show-ContainerLogs "svid-api-spire-server"
+    Show-ContainerLogs "svid-api-spire-agent"
+    Show-ContainerLogs "svid-api-svid-server"
+    Show-ContainerLogs "svid-api-svid-client"
     Show-PodmanStatus
     throw
 }

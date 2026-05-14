@@ -28,7 +28,7 @@ try {
     podman-compose up -d
 
     Write-Step "Waiting for services to start..."
-    $required = @("prometheus", "graphite")
+    $required = @("prometheus", "graphite", "metrics-spire-server", "metrics-spire-agent")
     $missing  = @()
 
     for ($attempt = 1; $attempt -le 10; $attempt++) {
@@ -59,10 +59,10 @@ try {
 }
 catch {
     Write-Host "`n   ❌ Startup failed: $_" -ForegroundColor Red
-    Show-ContainerLogs "${scenarioName}_spire-server_1"
-    Show-ContainerLogs "${scenarioName}_spire-agent_1"
-    Show-ContainerLogs "${scenarioName}_prometheus_1"
-    Show-ContainerLogs "${scenarioName}_graphite_1"
+    Show-ContainerLogs "metrics-spire-server"
+    Show-ContainerLogs "metrics-spire-agent"
+    Show-ContainerLogs "prometheus"
+    Show-ContainerLogs "graphite"
     Show-PodmanStatus
     throw
 }
