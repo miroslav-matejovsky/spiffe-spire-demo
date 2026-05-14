@@ -1,0 +1,26 @@
+{{define "content"}}
+{{with .Content}}
+<div class="stats">
+    <div class="stat">
+        <div class="value">{{if .Healthy}}<span style="color:#2b8a3e">&#10003;</span>{{else}}<span style="color:#c92a2a">&#10007;</span>{{end}}</div>
+        <div class="label">Server Health</div>
+    </div>
+    <div class="stat">
+        <div class="value">{{.AgentCount}}</div>
+        <div class="label">Agents</div>
+    </div>
+    <div class="stat">
+        <div class="value">{{.EntryCount}}</div>
+        <div class="label">Registration Entries</div>
+    </div>
+    <div class="stat">
+        <div class="value mono" style="font-size:1rem">{{if .TrustDomain}}{{.TrustDomain}}{{else}}-{{end}}</div>
+        <div class="label">Trust Domain</div>
+    </div>
+</div>
+{{end}}
+<div class="card">
+    <h2>About</h2>
+    <p>Read-only dashboard for SPIRE Server. Shows agents, registration entries, and trust bundle data. Page auto-refreshes every 10 seconds.</p>
+</div>
+{{end}}

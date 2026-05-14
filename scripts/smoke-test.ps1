@@ -3,14 +3,13 @@
 
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("01-simple", "02-tornjak", "03-workload", "04-tpm", "05-svid-api", "06-metrics", "07-production")]
+    [ValidateSet("01-simple", "02-dashboard", "03-workload", "04-tpm", "05-svid-api", "06-metrics", "07-production")]
     [string]$Scenario,
-    [switch]$SkipStartup = $false,
-    [switch]$Verbose = $false
+    [switch]$SkipStartup = $false
 )
 
 $ErrorActionPreference = "Stop"
-$VerbosePreference = if ($Verbose) { "Continue" } else { "SilentlyContinue" }
+$VerbosePreference = if ($PSBoundParameters.ContainsKey("Verbose")) { "Continue" } else { "SilentlyContinue" }
 
 $TestsPassed = 0
 $TestsFailed = 0
@@ -44,53 +43,48 @@ $ScenarioConfig = @{
         PortMappings = @{}
         HealthChecks = @{}
     }
-    "02-tornjak" = @{
-        Name = "Tornjak SPIRE UI"
-        ContainerPatterns = @("spire-server", "spire-agent", "tornjak-backend", "tornjak-frontend")
-        ConfigFiles = @("./spire/server/server.conf", "./spire/agent/agent.conf", "./tornjak/tornjak.conf")
+    "02-dashboard" = @{
+        Name = "SPIRE Dashboard"
+        ContainerPatterns = @("spire-server", "spire-agent", "dashboard")
+        ConfigFiles = @("./spire/server/server.conf", "./spire/agent/agent.conf")
         PortMappings = @{
-            "Tornjak UI" = "3000"
-            "Tornjak API" = "10000"
+            "Dashboard" = "8080"
         }
         HealthChecks = @{}
     }
     "03-workload" = @{
         Name = "Workload Identity"
-        ContainerPatterns = @("spire-server", "spire-agent", "workload", "tornjak-backend", "tornjak-frontend")
-        ConfigFiles = @("./spire/server/server.conf", "./spire/agent/agent.conf", "./tornjak/tornjak.conf")
+        ContainerPatterns = @("spire-server", "spire-agent", "workload", "dashboard")
+        ConfigFiles = @("./spire/server/server.conf", "./spire/agent/agent.conf")
         PortMappings = @{
-            "Tornjak UI" = "3000"
-            "Tornjak API" = "10000"
+            "Dashboard" = "8080"
         }
         HealthChecks = @{}
     }
     "04-tpm" = @{
         Name = "TPM-Based Attestation"
-        ContainerPatterns = @("spire-server", "spire-agent", "tornjak-backend", "tornjak-frontend")
-        ConfigFiles = @("./spire/server/server.conf", "./spire/agent/agent.conf", "./tornjak/tornjak.conf")
+        ContainerPatterns = @("spire-server", "spire-agent", "dashboard")
+        ConfigFiles = @("./spire/server/server.conf", "./spire/agent/agent.conf")
         PortMappings = @{
-            "Tornjak UI" = "3000"
-            "Tornjak API" = "10000"
+            "Dashboard" = "8080"
         }
         HealthChecks = @{}
     }
     "05-svid-api" = @{
         Name = "SVID-Based Service API"
-        ContainerPatterns = @("spire-server", "spire-agent", "svid-server", "svid-client", "tornjak-backend", "tornjak-frontend")
-        ConfigFiles = @("./spire/server/server.conf", "./spire/agent/agent.conf", "./tornjak/tornjak.conf")
+        ContainerPatterns = @("spire-server", "spire-agent", "svid-server", "svid-client", "dashboard")
+        ConfigFiles = @("./spire/server/server.conf", "./spire/agent/agent.conf")
         PortMappings = @{
-            "Tornjak UI" = "3000"
-            "Tornjak API" = "10000"
+            "Dashboard" = "8080"
         }
         HealthChecks = @{}
     }
     "06-metrics" = @{
         Name = "SPIRE Telemetry & Metrics"
-        ContainerPatterns = @("spire-server", "spire-agent", "prometheus", "graphite", "tornjak-backend", "tornjak-frontend")
-        ConfigFiles = @("./spire/server/server.conf", "./spire/agent/agent.conf", "./prometheus/prometheus.yml", "./tornjak/tornjak.conf")
+        ContainerPatterns = @("spire-server", "spire-agent", "prometheus", "graphite", "dashboard")
+        ConfigFiles = @("./spire/server/server.conf", "./spire/agent/agent.conf", "./prometheus/prometheus.yml")
         PortMappings = @{
-            "Tornjak UI" = "3000"
-            "Tornjak API" = "10000"
+            "Dashboard" = "8090"
             "Graphite Web UI" = "8080"
             "Graphite StatsD" = "8125"
             "Prometheus Web UI" = "9090"
@@ -102,11 +96,10 @@ $ScenarioConfig = @{
     }
     "07-production" = @{
         Name = "Production-Like Setup"
-        ContainerPatterns = @("spire-server", "spire-agent-1", "spire-agent-2", "workload-1", "workload-2", "tornjak-backend", "prometheus", "graphite")
-        ConfigFiles = @("./spire/server/server.conf", "./spire/agent-1/agent.conf", "./spire/agent-2/agent.conf", "./tornjak/tornjak.conf", "./prometheus/prometheus.yml")
+        ContainerPatterns = @("spire-server", "spire-agent-1", "spire-agent-2", "workload-1", "workload-2", "dashboard", "prometheus", "graphite")
+        ConfigFiles = @("./spire/server/server.conf", "./spire/agent-1/agent.conf", "./spire/agent-2/agent.conf", "./prometheus/prometheus.yml")
         PortMappings = @{
-            "Tornjak UI" = "3000"
-            "Tornjak API" = "10000"
+            "Dashboard" = "8090"
             "Prometheus" = "9090"
             "Graphite" = "8080"
         }

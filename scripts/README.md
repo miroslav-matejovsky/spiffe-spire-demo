@@ -22,11 +22,11 @@ A scenario-aware smoke test for the SPIFFE/SPIRE demo. Tests basic functionality
 | Scenario | Description |
 |----------|-------------|
 | `01-simple` | Basic SPIRE server and agent with join token attestation |
-| `02-tornjak` | Tornjak management UI and API for SPIRE |
+| `02-dashboard` | Read-only SPIRE dashboard |
 | `03-workload` | Workload identity with Unix attestor |
 | `04-tpm` | TPM-style node attestation (certificate-based stand-in) |
 | `05-svid-api` | mTLS between Go services using SVIDs |
-| `06-metrics` | SPIRE telemetry with Prometheus, Graphite, and Tornjak |
+| `06-metrics` | SPIRE telemetry with Prometheus, Graphite, and dashboard |
 | `07-production` | Production-like combined platform scenario |
 
 ### What It Tests
@@ -39,7 +39,7 @@ For each scenario, the smoke test checks:
 4. **Compose Stack** — Starts containers using the scenario's `env-up.ps1` script
 5. **Container Status** — Verifies all required containers are running
 6. **Health Checks** — Scenario-specific endpoint checks (for example Prometheus and Graphite)
-7. **Configuration Files** — Verifies SPIRE and Tornjak configs exist
+7. **Configuration Files** — Verifies SPIRE configs exist
 8. **Port Mappings** — Checks expected port bindings (scenario-specific)
 
 ### Exit Codes

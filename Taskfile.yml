@@ -7,7 +7,19 @@ vars:
 tasks:
   build:
     desc: Build all Go binaries
-    deps: [build-svid-server, build-svid-client]
+    deps: [build-dashboard, build-svid-server, build-svid-client]
+
+  build-dashboard:
+    desc: Build the SPIRE dashboard
+    cmds:
+      - go build -o dashboard/dashboard{{exeExt}} ./dashboard/
+    sources:
+      - "dashboard/**/*.go"
+      - "dashboard/templates/*"
+      - go.mod
+      - go.sum
+    generates:
+      - "dashboard/dashboard{{exeExt}}"
 
   build-svid-server:
     desc: Build the SVID API server
@@ -34,10 +46,14 @@ tasks:
   clean:
     desc: Remove all built binaries
     cmds:
+      - cmd: rm -f dashboard/dashboard{{exeExt}}
+        platforms: [linux, darwin]
       - cmd: rm -f {{.SVID_API_DIR}}/server/svid-server{{exeExt}}
         platforms: [linux, darwin]
       - cmd: rm -f {{.SVID_API_DIR}}/client/svid-client{{exeExt}}
         platforms: [linux, darwin]
+      - cmd: if exist "dashboard\dashboard{{exeExt}}" del /f "dashboard\dashboard{{exeExt}}"
+        platforms: [windows]
       - cmd: if exist "{{.SVID_API_DIR}}\server\svid-server{{exeExt}}" del /f "{{.SVID_API_DIR}}\server\svid-server{{exeExt}}"
         platforms: [windows]
       - cmd: if exist "{{.SVID_API_DIR}}\client\svid-client{{exeExt}}" del /f "{{.SVID_API_DIR}}\client\svid-client{{exeExt}}"
@@ -52,3 +68,12 @@ tasks:
     desc: Run Go tests
     cmds:
       - go test ./...
+
+# ---- maintenance tasks ----
+
+  deps:
+    desc: List direct dependencies with available updates
+    silent: true
+    cmds:
+      - go mod tidy
+      - go list -u -m -f "{{`{{if not .Indirect}}{{.}}{{end}}`}}" all

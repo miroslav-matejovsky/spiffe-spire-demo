@@ -4,8 +4,8 @@ param()
 $ErrorActionPreference = "Stop"
 
 $scenarioRoot = Split-Path -Parent $PSScriptRoot
-$serverContainerName = "tornjak-spire-server"
-$agentContainerName  = "tornjak-spire-agent"
+$serverContainerName = "dashboard-spire-server"
+$agentContainerName  = "dashboard-spire-agent"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot ".." ".." "..")).Path
 . (Join-Path $repoRoot "scripts" "logging.ps1")
 
@@ -13,7 +13,10 @@ $maxAttempts = 15
 
 Push-Location $scenarioRoot
 try {
-    Write-Step "Starting Tornjak scenario..."
+    Write-Step "Starting dashboard scenario..."
+
+    Write-Step "Building dashboard..."
+    podman build -t spiffe-spire-demo-dashboard:local -f (Join-Path $repoRoot "dashboard" "Containerfile") $repoRoot
 
     Write-Step "Starting SPIRE server..."
     podman-compose up -d spire-server *>$null
@@ -83,39 +86,38 @@ try {
     }
     Write-Ok "Agent attested successfully."
 
-    Write-Step "Starting Tornjak..."
-    podman-compose up -d tornjak-backend tornjak-frontend *>$null
+    Write-Step "Starting dashboard..."
+    podman-compose up -d --no-build dashboard *>$null
 
-    Write-Step "Waiting for Tornjak backend to become ready..."
-    $tornjak_ready = $false
-    for ($attempt = 1; $attempt -le  30; $attempt++) {
+    Write-Step "Waiting for dashboard to become ready..."
+    $dashboardReady = $false
+    for ($attempt = 1; $attempt -le 30; $attempt++) {
         try {
-            $response = Invoke-WebRequest -Uri "http://127.0.0.1:10000/api/tornjak/serverinfo" -UseBasicParsing -TimeoutSec 2 -ErrorAction SilentlyContinue
-            if ($response.StatusCode -lt 500) {
-                $tornjak_ready = $true
+            $response = Invoke-WebRequest -Uri "http://127.0.0.1:8080/health" -UseBasicParsing -TimeoutSec 2 -ErrorAction SilentlyContinue
+            if ($response.StatusCode -eq 200) {
+                $dashboardReady = $true
                 break
             }
         } catch {}
-        Write-Detail "attempt $attempt/${maxAttempts}: waiting for Tornjak backend..."
+        Write-Detail "attempt $attempt/30: waiting for dashboard..."
         Start-Sleep -Seconds 2
     }
-    if (-not $tornjak_ready) {
-        Write-Warn "Tornjak backend did not respond in time — it may still be starting."
+    if (-not $dashboardReady) {
+        Write-Warn "Dashboard did not respond in time -- it may still be starting."
     } else {
-        Write-Ok "Tornjak backend is ready."
+        Write-Ok "Dashboard is ready."
     }
 
-    Write-Ok "Tornjak scenario is ready!"
-    Write-Info "Tornjak UI:  http://localhost:3000"
-    Write-Info "Tornjak API: http://localhost:10000"
-    Write-Info "Server:      $serverContainerName"
-    Write-Info "Agent:       $agentContainerName"
+    Write-Ok "Dashboard scenario is ready!"
+    Write-Info "Dashboard: http://localhost:8080"
+    Write-Info "Server:    $serverContainerName"
+    Write-Info "Agent:     $agentContainerName"
 }
 catch {
     Write-Host "`n   ❌ Startup failed: $_" -ForegroundColor Red
     Show-ContainerLogs $serverContainerName
     Show-ContainerLogs $agentContainerName
-    Show-ContainerLogs "tornjak-tornjak-backend"
+    Show-ContainerLogs "dashboard-dashboard"
     Show-PodmanStatus
     throw
 }

@@ -20,32 +20,18 @@ services:
       - /var/run/:/var/run/
     command: ["-config", "/opt/spire/conf/agent/agent.conf"]
 
-  tornjak-backend:
-    container_name: tpm-tornjak-backend
-    image: ghcr.io/spiffe/tornjak-backend:latest
-    hostname: tornjak-backend
+  dashboard:
+    container_name: tpm-dashboard
+    image: spiffe-spire-demo-dashboard:local
+    build:
+      context: ../..
+      dockerfile: dashboard/Containerfile
+    hostname: dashboard
     depends_on: ["spire-server"]
     volumes:
-      - ./spire/server:/opt/spire/conf/server
-      - ./tornjak:/run/tornjak
       - spire-server-socket:/tmp/spire-server/private
-    command:
-      - --spire-config
-      - /opt/spire/conf/server/server.conf
-      - --tornjak-config
-      - /run/tornjak/tornjak.conf
     ports:
-      - "10000:10000"
-
-  tornjak-frontend:
-    container_name: tpm-tornjak-frontend
-    image: ghcr.io/spiffe/tornjak-frontend:latest
-    hostname: tornjak-frontend
-    depends_on: ["tornjak-backend"]
-    environment:
-      - REACT_APP_API_SERVER_URI=http://localhost:10000
-    ports:
-      - "3000:3000"
+      - "8080:8080"
 
 volumes:
   spire-server-socket:

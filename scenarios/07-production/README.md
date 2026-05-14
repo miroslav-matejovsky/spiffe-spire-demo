@@ -9,7 +9,7 @@ This final scenario combines the major ideas from the rest of the demo into one 
 - two different node attestation methods in one trust domain
 - multiple agents serving different workloads
 - workload registration and issuance across those agents
-- Tornjak for management visibility
+- SPIRE dashboard for management visibility
 - Prometheus and Graphite/StatsD for telemetry
 
 The goal is not to reproduce every production detail, but to show how the concepts fit together when a deployment grows beyond a single server and a single agent.
@@ -18,9 +18,8 @@ The goal is not to reproduce every production detail, but to show how the concep
 
 ```mermaid
 flowchart LR
-    Browser[Browser] --> Frontend[Tornjak Frontend\n:3000]
-    Frontend --> Backend[Tornjak Backend\n:10000]
-    Backend --> ServerSocket[/SPIRE Server API socket/]
+    Browser[Browser] --> Dashboard[SPIRE Dashboard\n:8090]
+    Dashboard --> ServerSocket[/SPIRE Server API socket/]
     ServerSocket --> Server[SPIRE Server\njoin_token + x509pop\nPrometheus + StatsD]
 
     Server --> Agent1[Agent 1\njoin_token\nPrometheus :8089]
@@ -50,9 +49,9 @@ This shows that a single SPIRE Server can accept more than one node attestation 
 
 Each agent has its own workload socket volume and its own demo workload container. This makes it easy to see which workload belongs to which agent and which parent ID each registration entry must use.
 
-### Management + telemetry together
+### Visibility + telemetry together
 
-Tornjak gives you human-friendly visibility into SPIRE state, while Prometheus and Graphite give you operational telemetry. In real environments you usually want both.
+The SPIRE dashboard gives you human-friendly visibility into SPIRE state, while Prometheus and Graphite give you operational telemetry. In real environments you usually want both.
 
 ## Files in This Scenario
 
@@ -60,7 +59,6 @@ Tornjak gives you human-friendly visibility into SPIRE state, while Prometheus a
 - `spire/server/server.conf` — server with `join_token`, `x509pop`, Prometheus, and StatsD telemetry
 - `spire/agent-1/agent.conf` — join-token agent with telemetry enabled
 - `spire/agent-2/agent.conf` — x509pop agent with telemetry enabled
-- `tornjak/tornjak.conf` — Tornjak backend configuration
 - `prometheus/prometheus.yml` — scrapes server plus both agents
 - `scripts/provision-agent.ps1` — generates x509pop credentials for agent 2
 - `scripts/register-workloads.ps1` — registers one workload under each attested agent
@@ -77,27 +75,27 @@ From `scenarios\07-production\`, run:
 The startup script does the following:
 
 1. provisions x509pop credentials for agent 2 if they are missing
-2. starts Graphite/StatsD and Prometheus
-3. starts the SPIRE Server and waits for health
-4. generates a join token for agent 1
-5. starts agent 1 (`join_token`) and agent 2 (`x509pop`)
-6. waits until both agents appear on the SPIRE Server
-7. starts one workload for each agent
-8. registers workload entries for both workloads
-9. starts Tornjak and waits for the backend API to respond
+2. builds the dashboard container image
+3. starts Graphite/StatsD and Prometheus
+4. starts the SPIRE Server and waits for health
+5. generates a join token for agent 1
+6. starts agent 1 (`join_token`) and agent 2 (`x509pop`)
+7. waits until both agents appear on the SPIRE Server
+8. starts one workload for each agent
+9. registers workload entries for both workloads
+10. starts the dashboard and waits for its health endpoint to respond
 
 ## Access the Services
 
 Once startup completes, open these endpoints:
 
-- **Tornjak UI**: http://localhost:3000
-- **Tornjak API**: http://localhost:10000
+- **Dashboard**: http://localhost:8090
 - **Prometheus**: http://localhost:9090
 - **Graphite**: http://localhost:8080
 
 ## What to Observe
 
-### In Tornjak
+### In the dashboard
 
 - two attested agents with different attestation types
 - registration entries for `spiffe://mirmat.org/workload-1` and `spiffe://mirmat.org/workload-2`
@@ -119,7 +117,7 @@ After the workloads and registrations are active, Graphite/StatsD should begin r
 
 ## Suggested Experiments
 
-1. Open Tornjak and compare the parent IDs for the two workload entries.
+1. Open the dashboard and compare the parent IDs for the two workload entries.
 2. Use Prometheus to inspect metrics for server and agent startup, SVID issuance, and workload API activity.
 3. Re-run the scenario after deleting agent 2 certificates to observe automatic reprovisioning.
 4. Modify the registration selectors and observe how workload issuance changes.

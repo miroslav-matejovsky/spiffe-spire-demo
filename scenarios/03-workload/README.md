@@ -1,6 +1,6 @@
 # Scenario 03 — Workload Identity
 
-> **Complexity:** Beginner-Intermediate · **Previous:** [02-tornjak](../02-tornjak/README.md) · **Next:** [04-tpm](../04-tpm/README.md)
+> **Complexity:** Beginner-Intermediate - **Previous:** [02-dashboard](../02-dashboard/README.md) - **Next:** [04-tpm](../04-tpm/README.md)
 
 ## What You Will Learn
 
@@ -61,6 +61,7 @@ flowchart LR
     Admin[Administrator\nregister-workload.ps1] -->|entry create| Server[SPIRE Server]
     Server -->|stores registration entries| Server
     Server <--> |node attestation + agent identity| Agent[SPIRE Agent]
+    Dashboard[SPIRE Dashboard] -->|reads server data via Unix socket| Server
     Workload[Workload container] -->|connects to shared Unix socket| Socket[/workload_api.sock/]
     Socket --> Agent
     Agent -->|unix attestor derives selectors\nfor example unix:uid:0| Agent
@@ -85,11 +86,13 @@ Open a PowerShell terminal in `scenarios\03-workload\` and run the following ste
 
 What this script does:
 
+- builds the local SPIRE dashboard image
 - starts the SPIRE Server
 - generates a join token for the agent
 - starts the SPIRE Agent with that token
 - waits until the agent is successfully attested
 - starts a separate workload container that watches the Workload API through the shared socket and joins the agent container PID namespace for `unix` attestation
+- starts the SPIRE dashboard on port 8080
 - shows the attested agent on the server
 
 ### 2. Register the workload
@@ -139,17 +142,16 @@ openssl x509 -in myworkload_svid.pem -text -noout
 Look for the URI Subject Alternative Name containing `spiffe://mirmat.org/myworkload`.
 
 
-## Tornjak UI
+## SPIRE Dashboard
 
-Tornjak is co-deployed as a management UI alongside the SPIRE server. Once the scenario is running, open your browser at:
+The SPIRE dashboard is co-deployed as a management UI alongside the SPIRE server. Once the scenario is running, open your browser at:
 
-- **Tornjak UI**: http://localhost:3000
-- **Tornjak API**: http://localhost:10000
+- **Dashboard**: http://localhost:8080
 
-From the UI you can:
-- View all attested agents (Agents tab)
-- Browse and create workload registration entries (Entries tab)
-- Inspect the trust bundle (Trust Domains tab)
+From the dashboard you can:
+- view all attested agents
+- browse workload registration entries
+- inspect trust domain data
 
 This makes the SPIFFE/SPIRE configuration visible without requiring CLI commands.
 

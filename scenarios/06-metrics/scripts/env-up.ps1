@@ -26,6 +26,9 @@ try {
         & $provisionScript
     }
 
+    Write-Step "Building dashboard..."
+    podman build -t spiffe-spire-demo-dashboard:local -f (Join-Path $repoRoot "dashboard" "Containerfile") $repoRoot
+
     Write-Step "Starting core services..."
     podman-compose up -d graphite-statsd prometheus spire-server spire-agent *>$null
 
@@ -55,10 +58,10 @@ try {
         throw "Required container(s) did not start: $($missing -join ', ')"
     }
 
-    Write-Step "Starting Tornjak..."
-    podman-compose up -d tornjak-backend tornjak-frontend *>$null
+    Write-Step "Starting dashboard..."
+    podman-compose up -d --no-build dashboard *>$null
 
-    $required = $requiredCore + @("metrics-tornjak-backend", "metrics-tornjak-frontend")
+    $required = $requiredCore + @("metrics-dashboard")
     for ($attempt = 1; $attempt -le 10; $attempt++) {
         Start-Sleep -Seconds 2
         $containers = @(podman ps --format "{{.Names}}")
@@ -69,29 +72,28 @@ try {
         throw "Required container(s) did not start: $($missing -join ', ')"
     }
 
-    Write-Step "Waiting for Tornjak backend to become ready..."
-    $tornjakReady = $false
-    for ($attempt = 1; $attempt -le  30; $attempt++) {
+    Write-Step "Waiting for dashboard to become ready..."
+    $dashboardReady = $false
+    for ($attempt = 1; $attempt -le 30; $attempt++) {
         try {
-            $response = Invoke-WebRequest -Uri "http://127.0.0.1:10000/api/tornjak/serverinfo" -UseBasicParsing -TimeoutSec 2 -ErrorAction SilentlyContinue
-            if ($response.StatusCode -lt 500) {
-                $tornjakReady = $true
+            $response = Invoke-WebRequest -Uri "http://127.0.0.1:8090/health" -UseBasicParsing -TimeoutSec 2 -ErrorAction SilentlyContinue
+            if ($response.StatusCode -eq 200) {
+                $dashboardReady = $true
                 break
             }
         } catch {}
-        Write-Detail "attempt $attempt/${maxAttempts}: waiting for Tornjak backend..."
+        Write-Detail "attempt $attempt/30: waiting for dashboard..."
         Start-Sleep -Seconds 2
     }
 
-    if (-not $tornjakReady) {
-        Write-Warn "Tornjak backend did not respond in time — it may still be starting."
+    if (-not $dashboardReady) {
+        Write-Warn "Dashboard did not respond in time -- it may still be starting."
     } else {
-        Write-Ok "Tornjak is ready."
+        Write-Ok "Dashboard is ready."
     }
 
     Write-Ok "Metrics scenario is ready!"
-    Write-Info "Tornjak UI:  http://localhost:3000"
-    Write-Info "Tornjak API: http://localhost:10000"
+    Write-Info "Dashboard:   http://localhost:8090"
     Write-Info "Prometheus:  http://localhost:9090"
     Write-Info "Graphite:    http://localhost:8080"
 }
@@ -99,7 +101,7 @@ catch {
     Write-Host "`n   ❌ Startup failed: $_" -ForegroundColor Red
     Show-ContainerLogs "metrics-spire-server"
     Show-ContainerLogs "metrics-spire-agent"
-    Show-ContainerLogs "metrics-tornjak-backend"
+    Show-ContainerLogs "metrics-dashboard"
     Show-ContainerLogs "prometheus"
     Show-ContainerLogs "graphite"
     Show-PodmanStatus

@@ -1,6 +1,6 @@
 # Scenario 01 — Simple SPIRE Setup
 
-> **Complexity:** Beginner · **Next:** [02-tornjak](../02-tornjak/README.md)
+> **Complexity:** Beginner - **Next:** [02-dashboard](../02-dashboard/README.md)
 
 ## What You Will Learn
 
@@ -133,4 +133,4 @@ podman-compose logs -f spire-agent
 
 ---
 
-**Next:** [02-tornjak](../02-tornjak/README.md) — Learn how workloads get their own identities
+**Next:** [02-dashboard](../02-dashboard/README.md) — Learn how workloads get their own identities

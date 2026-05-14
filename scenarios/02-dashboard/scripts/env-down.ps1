@@ -9,9 +9,9 @@ $ScenarioRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Push-Location $ScenarioRoot
 
 try {
-    Write-Host "Stopping Tornjak scenario..." -ForegroundColor Cyan
+    Write-Host "Stopping dashboard scenario..." -ForegroundColor Cyan
     podman-compose down -v --remove-orphans
-    Write-Host "Tornjak scenario stopped." -ForegroundColor Green
+    Write-Host "Dashboard scenario stopped." -ForegroundColor Green
 }
 finally {
     Pop-Location

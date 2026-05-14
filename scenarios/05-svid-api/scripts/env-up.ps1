@@ -17,6 +17,7 @@ try {
     Write-Step "Building Go services..."
     $serverContainerfile = Join-Path $repoRoot 'scenarios' '05-svid-api' 'server' 'Containerfile'
     $clientContainerfile = Join-Path $repoRoot 'scenarios' '05-svid-api' 'client' 'Containerfile'
+    podman build -t spiffe-spire-demo-dashboard:local -f (Join-Path $repoRoot "dashboard" "Containerfile") $repoRoot
     podman build -t spiffe-spire-demo-svid-server:local -f $serverContainerfile $repoRoot
     podman build -t spiffe-spire-demo-svid-client:local -f $clientContainerfile $repoRoot
 
@@ -77,32 +78,31 @@ try {
     Start-Sleep -Seconds 3
     podman-compose up -d --no-build svid-client *>$null
 
-    Write-Step "Starting Tornjak..."
-    podman-compose up -d tornjak-backend tornjak-frontend *>$null
+    Write-Step "Starting dashboard..."
+    podman-compose up -d --no-build dashboard *>$null
 
-    Write-Step "Waiting for Tornjak backend to become ready..."
-    $tornjakReady = $false
-    for ($attempt = 1; $attempt -le  30; $attempt++) {
+    Write-Step "Waiting for dashboard to become ready..."
+    $dashboardReady = $false
+    for ($attempt = 1; $attempt -le 30; $attempt++) {
         try {
-            $response = Invoke-WebRequest -Uri "http://127.0.0.1:10000/api/tornjak/serverinfo" -UseBasicParsing -TimeoutSec 2 -ErrorAction SilentlyContinue
-            if ($response.StatusCode -lt 500) {
-                $tornjakReady = $true
+            $response = Invoke-WebRequest -Uri "http://127.0.0.1:8080/health" -UseBasicParsing -TimeoutSec 2 -ErrorAction SilentlyContinue
+            if ($response.StatusCode -eq 200) {
+                $dashboardReady = $true
                 break
             }
         } catch {}
-        Write-Detail "attempt $attempt/${maxAttempts}: waiting for Tornjak backend..."
+        Write-Detail "attempt $attempt/30: waiting for dashboard..."
         Start-Sleep -Seconds 2
     }
 
-    if (-not $tornjakReady) {
-        Write-Warn "Tornjak backend did not respond in time — it may still be starting."
+    if (-not $dashboardReady) {
+        Write-Warn "Dashboard did not respond in time -- it may still be starting."
     } else {
-        Write-Ok "Tornjak is ready."
+        Write-Ok "Dashboard is ready."
     }
 
     Write-Ok "SVID API scenario is ready!"
-    Write-Info "Tornjak UI:  http://localhost:3000"
-    Write-Info "Tornjak API: http://localhost:10000"
+    Write-Info "Dashboard: http://localhost:8080"
     Write-Info "View server logs: podman-compose logs -f svid-server"
     Write-Info "View client logs: podman-compose logs -f svid-client"
 }
@@ -112,7 +112,7 @@ catch {
     Show-ContainerLogs "svid-api-spire-agent"
     Show-ContainerLogs "svid-api-svid-server"
     Show-ContainerLogs "svid-api-svid-client"
-    Show-ContainerLogs "svid-api-tornjak-backend"
+    Show-ContainerLogs "svid-api-dashboard"
     Show-PodmanStatus
     throw
 }

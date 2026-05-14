@@ -176,17 +176,16 @@ The live compose stack uses the official SPIRE agent image so the scenario stays
 - a switch from `x509pop` to `tpm_devid`
 
 
-## Tornjak UI
+## SPIRE Dashboard
 
-Tornjak is co-deployed as a management UI alongside the SPIRE server. Once the scenario is running, open your browser at:
+The SPIRE dashboard is co-deployed as a management UI alongside the SPIRE server. Once the scenario is running, open your browser at:
 
-- **Tornjak UI**: http://localhost:3000
-- **Tornjak API**: http://localhost:10000
+- **Dashboard**: http://localhost:8080
 
-From the UI you can:
-- View all attested agents (Agents tab)
-- Browse and create workload registration entries (Entries tab)
-- Inspect the trust bundle (Trust Domains tab)
+From the dashboard you can:
+- View all attested agents
+- Browse workload registration entries
+- Inspect the trust bundle
 
 This makes the SPIFFE/SPIRE configuration visible without requiring CLI commands.
 

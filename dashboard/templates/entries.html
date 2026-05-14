@@ -1,0 +1,33 @@
+{{define "content"}}
+<div class="card">
+    <h2>Registration Entries</h2>
+    {{with .Content}}
+    {{if .}}
+    <table>
+        <thead>
+            <tr>
+                <th>Entry ID</th>
+                <th>SPIFFE ID</th>
+                <th>Parent ID</th>
+                <th>Selectors</th>
+                <th>TTL</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .}}
+            <tr>
+                <td class="mono">{{.ID}}</td>
+                <td class="mono">{{.SpiffeID}}</td>
+                <td class="mono">{{.ParentID}}</td>
+                <td class="mono">{{.Selectors}}</td>
+                <td>{{.TTL}}s</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <p class="empty">No registration entries.</p>
+    {{end}}
+    {{end}}
+</div>
+{{end}}

@@ -197,12 +197,13 @@ From `scenarios/05-svid-api`, run:
 ```
 
 The script performs these steps for you:
-1. Builds the Go client and server images.
+1. Builds the dashboard, Go client, and Go server images.
 2. Starts the SPIRE Server.
 3. Generates a join token.
 4. Starts the SPIRE Agent with that join token.
 5. Registers workload entries for the server and client.
 6. Starts the two Go services.
+7. Starts the SPIRE dashboard.
 
 ## What to Observe
 - The server logs its own SPIFFE ID when it starts.
@@ -233,19 +234,18 @@ podman-compose logs -f spire-server
 - **Build fails with missing modules** — run `go mod tidy` at the repository root to refresh `go.sum`.
 
 
-## Tornjak UI
+## SPIRE Dashboard
 
-Tornjak is co-deployed as a management UI alongside the SPIRE server. Once the scenario is running, open your browser at:
+SPIRE dashboard is co-deployed as a management UI alongside the SPIRE server. Once the scenario is running, open your browser at:
 
-- **Tornjak UI**: http://localhost:3000
-- **Tornjak API**: http://localhost:10000
+- **Dashboard**: http://localhost:8080
 
-From the UI you can:
-- View all attested agents (Agents tab)
-- Browse and create workload registration entries (Entries tab)
-- Inspect the trust bundle (Trust Domains tab)
+From dashboard you can:
+- View all attested agents
+- Browse workload registration entries
+- Inspect trust domain data
 
-This makes the SPIFFE/SPIRE configuration visible without requiring CLI commands.
+This makes SPIFFE and SPIRE configuration visible without requiring CLI commands.
 
 ## Cleanup
 ```powershell

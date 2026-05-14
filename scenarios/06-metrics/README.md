@@ -182,19 +182,18 @@ The same metric but this time shown using Prometheus UI
 
 
 
-## Tornjak UI
+## SPIRE Dashboard
 
-Tornjak is co-deployed as a management UI alongside the SPIRE server. Once the scenario is running, open your browser at:
+SPIRE Dashboard is co-deployed as a management UI alongside the SPIRE server. Once the scenario is running, open your browser at:
 
-- **Tornjak UI**: http://localhost:3000
-- **Tornjak API**: http://localhost:10000
+- **Dashboard**: http://localhost:8090
 
 From the UI you can:
-- View all attested agents (Agents tab)
-- Browse and create workload registration entries (Entries tab)
-- Inspect the trust bundle (Trust Domains tab)
+- View all attested agents
+- Browse workload registration entries
+- Inspect SPIRE server state
 
-This makes the SPIFFE/SPIRE configuration visible without requiring CLI commands.
+This makes SPIFFE and SPIRE configuration visible without requiring CLI commands.
 
 ## Cleanup
 
@@ -206,4 +205,4 @@ When you are finished running this tutorial, you can use the following PowerShel
 
 ---
 
-**Next:** [07-production](../07-production/README.md) — Combine attestation, workloads, Tornjak, and telemetry
+**Next:** [07-production](../07-production/README.md) — Combine attestation, workloads, dashboard, and telemetry

@@ -25,7 +25,7 @@ Run smoke tests for any scenario:
 .\scripts\smoke-test.ps1 -Scenario 03-workload -SkipStartup  # containers already running
 ```
 
-Valid scenario names: `01-simple`, `02-tornjak`, `03-workload`, `04-tpm`, `05-svid-api`, `06-metrics`, `07-production`.
+Valid scenario names: `01-simple`, `02-dashboard`, `03-workload`, `04-tpm`, `05-svid-api`, `06-metrics`, `07-production`.
 
 ## Architecture
 
@@ -44,11 +44,11 @@ scenarios/<N>-<name>/
     └── env-down.ps1     # Tear down the stack
 ```
 
-Scenario 05 also contains Go source in `server/` and `client/` subdirectories. Scenario 07 adds a second agent, Tornjak, and telemetry collectors.
+Scenario 05 also contains Go source in `server/` and `client/` subdirectories. Scenario 07 adds a second agent, a dashboard, and telemetry collectors.
 
 ### How Scenarios Start
 
-**Always use `scripts/env-up.ps1` instead of `podman-compose up -d` directly.** The helper scripts handle runtime-specific startup such as join token generation, credential provisioning, workload registration, and Tornjak readiness checks.
+**Always use `scripts/env-up.ps1` instead of `podman-compose up -d` directly.** The helper scripts handle runtime-specific startup such as join token generation, credential provisioning, workload registration, and dashboard readiness checks.
 
 Only one scenario should be running at a time — containers share names and host ports that can conflict.
 
@@ -75,5 +75,5 @@ Workload registration happens in `scripts/register-workloads.ps1` using `spire-s
 - **Trust domain** is `mirmat.org` across all scenarios.
 - **SPIRE version** is `1.14.5` (pinned in all `compose.yml` files).
 - `insecure_bootstrap = true` is intentional in agent configs for join-token demos, not for production.
-- Tornjak uses `ghcr.io/spiffe/tornjak-backend:v1.2.2` and `ghcr.io/spiffe/tornjak-frontend:v1.2.2` wherever it appears.
+- The dashboard is built from `dashboard/` using a multi-stage Containerfile. All scenarios from 02 onward include it.
 - Server configs use `KeyManager "memory"` and SQLite (`DataStore "sql"`) unless the scenario is intentionally demonstrating a different pattern.
