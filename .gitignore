@@ -11,7 +11,17 @@ bin/
 memory-chat
 pipeline-query
 
-# Scenario 05 - generated agent credentials (created at runtime by provision-agent.ps1)
-scenarios/05-metrics/spire/agent/agent.key.pem
-scenarios/05-metrics/spire/agent/agent.crt.pem
-scenarios/05-metrics/spire/server/agent-cacert.pem
+# agent stuff
+.task/
+
+# Scenario 06 - generated agent credentials (created at runtime by provision-agent.ps1)
+scenarios/06-metrics/spire/agent/agent.key.pem
+scenarios/06-metrics/spire/agent/agent.crt.pem
+scenarios/06-metrics/spire/server/agent-cacert.pem
+
+# Scenario 07 - generated x509pop credentials
+scenarios/07-production/spire/server/devid-ca.pem
+scenarios/07-production/spire/server/devid-ca-key.pem
+scenarios/07-production/spire/agent-2/devid-ca.pem
+scenarios/07-production/spire/agent-2/devid-cert.pem
+scenarios/07-production/spire/agent-2/devid-key.pem

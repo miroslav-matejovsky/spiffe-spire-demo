@@ -15,16 +15,18 @@ Work through the scenarios in order — each builds on concepts from the previou
 | # | Scenario | Concepts | Description |
 |---|----------|----------|-------------|
 | 1 | [01-simple](scenarios/01-simple/README.md) | Trust domains, SPIFFE IDs, node attestation | Minimal SPIRE server and agent with join token attestation |
-| 2 | [02-workload](scenarios/02-workload/README.md) | Workload registration, Unix attestor, SVID lifecycle | Add a workload container and fetch its X.509 SVID |
-| 3 | [03-tpm](scenarios/03-tpm/README.md) | TPM, hardware identity, certificate-based attestation | Certificate-based node attestation (simulating TPM DevID) |
-| 4 | [04-svid-api](scenarios/04-svid-api/README.md) | go-spiffe SDK, mTLS, certificate rotation | Two Go services communicating via mTLS using SVIDs |
-| 5 | [05-metrics](scenarios/05-metrics/README.md) | Telemetry, Prometheus, StatsD, Graphite | Monitor SPIRE with Prometheus and Graphite dashboards |
+| 2 | [02-tornjak](scenarios/02-tornjak/README.md) | Tornjak, SPIRE management UI, server API socket | Add Tornjak to visualize agents, entries, and trust bundles |
+| 3 | [03-workload](scenarios/03-workload/README.md) | Workload registration, Unix attestor, SVID lifecycle | Add a workload container and fetch its X.509 SVID |
+| 4 | [04-tpm](scenarios/04-tpm/README.md) | TPM concepts, hardware identity, certificate-based attestation | Certificate-based node attestation (simulating TPM DevID) |
+| 5 | [05-svid-api](scenarios/05-svid-api/README.md) | go-spiffe SDK, mTLS, certificate rotation | Two Go services communicating via mTLS using SVIDs |
+| 6 | [06-metrics](scenarios/06-metrics/README.md) | Telemetry, Prometheus, StatsD, Graphite, Tornjak | Monitor SPIRE while exploring it through the Tornjak UI |
+| 7 | [07-production](scenarios/07-production/README.md) | Mixed attestation, multi-agent SPIRE, management, telemetry | Combine workloads, Tornjak, and metrics into a production-like lab |
 
 ## Prerequisites
 
 - [Podman](https://podman.io/getting-started/installation) and [podman-compose](https://github.com/containers/podman-compose)
 - [PowerShell 7+](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell)
-- [Go 1.26+](https://go.dev/dl/) (only for scenario 04-svid-api local development)
+- [Go 1.26+](https://go.dev/dl/) (only for scenario 05-svid-api local development)
 - [Task](https://taskfile.dev/) (optional, for building Go code locally)
 
 ## Quick Start
@@ -53,14 +55,16 @@ See [scripts/README.md](scripts/README.md) for full documentation.
 ```
 ├── scenarios/
 │   ├── 01-simple/          # Beginner: minimal SPIRE setup
-│   ├── 02-workload/        # Beginner-Intermediate: workload identity
-│   ├── 03-tpm/             # Intermediate: TPM-based attestation
-│   ├── 04-svid-api/        # Intermediate-Advanced: mTLS with Go
-│   └── 05-metrics/         # Advanced: telemetry and monitoring
+│   ├── 02-tornjak/         # Beginner: Tornjak UI and API for SPIRE
+│   ├── 03-workload/        # Beginner-Intermediate: workload identity
+│   ├── 04-tpm/             # Intermediate: TPM-style node attestation
+│   ├── 05-svid-api/        # Intermediate-Advanced: mTLS with Go
+│   ├── 06-metrics/         # Advanced: telemetry, monitoring, and Tornjak
+│   └── 07-production/      # Advanced: combined production-like platform
 ├── scripts/
 │   ├── smoke-test.ps1      # Scenario-aware smoke tests
 │   └── README.md
-├── Taskfile.yml             # Go build tasks
-├── go.mod                   # Go module definition
-└── README.md                # This file
+├── Taskfile.yml            # Go build tasks
+├── go.mod                  # Go module definition
+└── README.md               # This file
 ```

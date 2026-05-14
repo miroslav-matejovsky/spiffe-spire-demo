@@ -1,0 +1,103 @@
+name: production
+
+services:
+  graphite-statsd:
+    container_name: production-graphite
+    image: graphiteapp/graphite-statsd:1.1.10-5
+    hostname: graphite-statsd
+    restart: always
+    ports:
+      - "8080:80"
+      - "8125:8125/udp"
+
+  prometheus:
+    container_name: production-prometheus
+    image: prom/prometheus:v3.11.3
+    hostname: prometheus
+    restart: always
+    volumes:
+      - ./prometheus:/etc/prometheus
+    ports:
+      - "9090:9090"
+
+  spire-server:
+    container_name: production-spire-server
+    image: ghcr.io/spiffe/spire-server:1.14.5
+    hostname: spire-server
+    volumes:
+      - ./spire/server:/opt/spire/conf/server
+      - spire-server-socket:/tmp/spire-server/private
+    expose:
+      - "8088"
+    command: ["-config", "/opt/spire/conf/server/server.conf"]
+
+  spire-agent-1:
+    container_name: production-spire-agent-1
+    image: ghcr.io/spiffe/spire-agent:1.14.5
+    hostname: spire-agent-1
+    depends_on: ["spire-server"]
+    volumes:
+      - ./spire/agent-1:/opt/spire/conf/agent
+      - workload-socket-1:/opt/spire/sockets
+    expose:
+      - "8089"
+    command: ["-config", "/opt/spire/conf/agent/agent.conf", "-joinToken", "${SPIRE_AGENT_1_JOIN_TOKEN}"]
+
+  workload-1:
+    container_name: production-workload-1
+    image: ghcr.io/spiffe/spire-agent:1.14.5
+    hostname: workload-1
+    depends_on: ["spire-agent-1"]
+    pid: "container:production-spire-agent-1"
+    volumes:
+      - workload-socket-1:/opt/spire/sockets
+    entrypoint: ["/opt/spire/bin/spire-agent", "api", "watch", "-socketPath", "/opt/spire/sockets/workload_api.sock"]
+
+  spire-agent-2:
+    container_name: production-spire-agent-2
+    image: ghcr.io/spiffe/spire-agent:1.14.5
+    hostname: spire-agent-2
+    depends_on: ["spire-server"]
+    volumes:
+      - ./spire/agent-2:/opt/spire/conf/agent
+      - workload-socket-2:/opt/spire/sockets
+    expose:
+      - "8090"
+    command: ["-config", "/opt/spire/conf/agent/agent.conf"]
+
+  workload-2:
+    container_name: production-workload-2
+    image: ghcr.io/spiffe/spire-agent:1.14.5
+    hostname: workload-2
+    depends_on: ["spire-agent-2"]
+    pid: "container:production-spire-agent-2"
+    volumes:
+      - workload-socket-2:/opt/spire/sockets
+    entrypoint: ["/opt/spire/bin/spire-agent", "api", "watch", "-socketPath", "/opt/spire/sockets/workload_api.sock"]
+
+  tornjak-backend:
+    container_name: production-tornjak-backend
+    image: ghcr.io/spiffe/tornjak-backend:v1.2.2
+    hostname: tornjak-backend
+    depends_on: ["spire-server"]
+    volumes:
+      - ./spire/server:/opt/spire/conf/server
+      - ./tornjak:/run/tornjak
+      - spire-server-socket:/tmp/spire-server/private
+    ports:
+      - "10000:10000"
+
+  tornjak-frontend:
+    container_name: production-tornjak-frontend
+    image: ghcr.io/spiffe/tornjak-frontend:v1.2.2
+    hostname: tornjak-frontend
+    depends_on: ["tornjak-backend"]
+    environment:
+      - REACT_APP_API_SERVER_URI=http://localhost:10000
+    ports:
+      - "3000:3000"
+
+volumes:
+  spire-server-socket:
+  workload-socket-1:
+  workload-socket-2:

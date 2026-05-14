@@ -11,10 +11,10 @@ A scenario-aware smoke test for the SPIFFE/SPIRE demo. Tests basic functionality
 .\scripts\smoke-test.ps1 -Scenario 01-simple
 
 # Run with verbose output
-.\scripts\smoke-test.ps1 -Scenario 05-metrics -Verbose
+.\scripts\smoke-test.ps1 -Scenario 06-metrics -Verbose
 
 # Run tests without starting containers (containers must already be running)
-.\scripts\smoke-test.ps1 -Scenario 02-workload -SkipStartup
+.\scripts\smoke-test.ps1 -Scenario 03-workload -SkipStartup
 ```
 
 ### Available Scenarios
@@ -22,10 +22,12 @@ A scenario-aware smoke test for the SPIFFE/SPIRE demo. Tests basic functionality
 | Scenario | Description |
 |----------|-------------|
 | `01-simple` | Basic SPIRE server and agent with join token attestation |
-| `02-workload` | Workload identity with Unix attestor |
-| `03-tpm` | TPM-based node attestation (certificate-based) |
-| `04-svid-api` | mTLS between Go services using SVIDs |
-| `05-metrics` | SPIRE telemetry with Prometheus and Graphite |
+| `02-tornjak` | Tornjak management UI and API for SPIRE |
+| `03-workload` | Workload identity with Unix attestor |
+| `04-tpm` | TPM-style node attestation (certificate-based stand-in) |
+| `05-svid-api` | mTLS between Go services using SVIDs |
+| `06-metrics` | SPIRE telemetry with Prometheus, Graphite, and Tornjak |
+| `07-production` | Production-like combined platform scenario |
 
 ### What It Tests
 
@@ -36,8 +38,8 @@ For each scenario, the smoke test checks:
 3. **Running Scenario Detection** — Warns if containers from another scenario are running
 4. **Compose Stack** — Starts containers using the scenario's `env-up.ps1` script
 5. **Container Status** — Verifies all required containers are running
-6. **Health Checks** — Scenario-specific endpoint checks (e.g., Prometheus, Graphite)
-7. **Configuration Files** — Verifies SPIRE configs exist
+6. **Health Checks** — Scenario-specific endpoint checks (for example Prometheus and Graphite)
+7. **Configuration Files** — Verifies SPIRE and Tornjak configs exist
 8. **Port Mappings** — Checks expected port bindings (scenario-specific)
 
 ### Exit Codes

@@ -1,0 +1,18 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'spire-server'
+    metrics_path: '/'
+    static_configs:
+      - targets: ['spire-server:8088']
+
+  - job_name: 'spire-agent-1'
+    metrics_path: '/'
+    static_configs:
+      - targets: ['spire-agent-1:8089']
+
+  - job_name: 'spire-agent-2'
+    metrics_path: '/'
+    static_configs:
+      - targets: ['spire-agent-2:8090']

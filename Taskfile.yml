@@ -2,7 +2,7 @@
 version: '3'
 
 vars:
-  SVID_API_DIR: scenarios/04-svid-api
+  SVID_API_DIR: scenarios/05-svid-api
 
 tasks:
   build:
