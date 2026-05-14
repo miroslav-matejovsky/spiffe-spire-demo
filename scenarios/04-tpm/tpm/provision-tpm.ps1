@@ -13,7 +13,6 @@ $agentCertPath = Join-Path $agentDir "devid-cert.pem"
 
 $generatedFiles = @(
     $caCertPath,
-    $caKeyPath,
     $agentKeyPath,
     $agentCertPath
 )
@@ -58,7 +57,6 @@ $serialNumber = New-Object byte[] 16
 $agentCertificate = $agentRequest.Create($caCertificate, $notBefore, $notAfter, $serialNumber)
 
 Set-Content -Path $caCertPath -Value $caCertificate.ExportCertificatePem() -NoNewline
-Set-Content -Path $caKeyPath -Value $caKey.ExportPkcs8PrivateKeyPem() -NoNewline
 Set-Content -Path $agentCertPath -Value $agentCertificate.ExportCertificatePem() -NoNewline
 Set-Content -Path $agentKeyPath -Value $agentKey.ExportPkcs8PrivateKeyPem() -NoNewline
 
@@ -69,6 +67,5 @@ $agentKey.Dispose()
 
 Write-Host "Provisioning complete." -ForegroundColor Green
 Write-Host "  CA certificate:    $caCertPath" -ForegroundColor Gray
-Write-Host "  CA private key:    $caKeyPath" -ForegroundColor Gray
 Write-Host "  Agent certificate: $agentCertPath" -ForegroundColor Gray
 Write-Host "  Agent private key: $agentKeyPath" -ForegroundColor Gray

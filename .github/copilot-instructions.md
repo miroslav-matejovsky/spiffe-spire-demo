@@ -2,14 +2,15 @@
 
 ## Repository Overview
 
-This is a hands-on learning demo for [SPIFFE](https://spiffe.io/) and [SPIRE](https://spiffe.io/docs/latest/spire-about/). It now contains seven self-contained, progressively complex scenarios. The only Go code lives in `scenarios/05-svid-api/`, which demonstrates two services communicating via mTLS using X.509 SVIDs.
+This is a hands-on learning demo for [SPIFFE](https://spiffe.io/) and [SPIRE](https://spiffe.io/docs/latest/spire-about/). It now contains seven self-contained, progressively complex scenarios. Go code lives in `scenarios/05-svid-api/` (mTLS services) and `dashboard/` (SPIRE server API dashboard).
 
 ## Build, Lint, and Test
 
 Uses [Task](https://taskfile.dev/) for Go tasks. All commands run from the repository root.
 
 ```powershell
-task build               # Build both Go binaries (server + client)
+task build               # Build all Go binaries (dashboard + server + client)
+task build-dashboard     # Build dashboard only
 task build-svid-server   # Build server only
 task build-svid-client   # Build client only
 task lint                # go vet ./...

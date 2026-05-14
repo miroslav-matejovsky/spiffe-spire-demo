@@ -24,6 +24,7 @@ Push-Location $scenarioRoot
 try {
     Write-Step "Building dashboard..."
     podman build -t spiffe-spire-demo-dashboard:local -f (Join-Path $repoRoot "dashboard" "Containerfile") $repoRoot
+    if ($LASTEXITCODE -ne 0) { throw "Dashboard image build failed." }
 
     Write-Step "Starting TPM learning scenario..."
 
@@ -80,8 +81,7 @@ try {
         Write-Host "`n$(($agentList | Out-String).TrimEnd())"
     }
     else {
-        Write-Warn "The stack started, but attestation was not confirmed after $maxAttempts attempts."
-        Write-Info "Check logs with: podman-compose logs -f -t"
+        throw "Agent attestation was not confirmed after $maxAttempts attempts. Check logs with: podman-compose logs -f -t"
     }
 
     Write-Step "Starting dashboard..."

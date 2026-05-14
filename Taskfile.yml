@@ -75,5 +75,4 @@ tasks:
     desc: List direct dependencies with available updates
     silent: true
     cmds:
-      - go mod tidy
       - go list -u -m -f "{{`{{if not .Indirect}}{{.}}{{end}}`}}" all

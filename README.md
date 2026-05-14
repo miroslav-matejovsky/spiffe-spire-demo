@@ -26,7 +26,7 @@ Work through the scenarios in order — each builds on concepts from the previou
 
 - [Podman](https://podman.io/getting-started/installation) and [podman-compose](https://github.com/containers/podman-compose)
 - [PowerShell 7+](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell)
-- [Go 1.26+](https://go.dev/dl/) (only for scenario 05-svid-api local development)
+- [Go 1.26+](https://go.dev/dl/) (for scenario 05-svid-api and dashboard local development)
 - [Task](https://taskfile.dev/) (optional, for building Go code locally)
 
 ## Quick Start

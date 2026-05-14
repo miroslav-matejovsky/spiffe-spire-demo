@@ -232,7 +232,15 @@ func (d *dashboard) handleBundles(w http.ResponseWriter, r *http.Request) {
 	d.render(w, "bundles", data)
 }
 
-func (d *dashboard) handleHealth(w http.ResponseWriter, _ *http.Request) {
+func (d *dashboard) handleHealth(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+
+	_, err := d.bundles.GetBundle(ctx, &bundlev1.GetBundleRequest{})
+	if err != nil {
+		http.Error(w, "SPIRE server unreachable: "+err.Error(), http.StatusServiceUnavailable)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, "ok")
 }

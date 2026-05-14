@@ -28,6 +28,7 @@ try {
 
     Write-Step "Building dashboard..."
     podman build -t spiffe-spire-demo-dashboard:local -f (Join-Path $repoRoot "dashboard" "Containerfile") $repoRoot
+    if ($LASTEXITCODE -ne 0) { throw "Dashboard image build failed." }
 
     Write-Step "Starting core services..."
     podman-compose up -d graphite-statsd prometheus spire-server spire-agent *>$null

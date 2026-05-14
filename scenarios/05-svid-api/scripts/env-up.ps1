@@ -18,8 +18,11 @@ try {
     $serverContainerfile = Join-Path $repoRoot 'scenarios' '05-svid-api' 'server' 'Containerfile'
     $clientContainerfile = Join-Path $repoRoot 'scenarios' '05-svid-api' 'client' 'Containerfile'
     podman build -t spiffe-spire-demo-dashboard:local -f (Join-Path $repoRoot "dashboard" "Containerfile") $repoRoot
+    if ($LASTEXITCODE -ne 0) { throw "Dashboard image build failed." }
     podman build -t spiffe-spire-demo-svid-server:local -f $serverContainerfile $repoRoot
+    if ($LASTEXITCODE -ne 0) { throw "svid-server image build failed." }
     podman build -t spiffe-spire-demo-svid-client:local -f $clientContainerfile $repoRoot
+    if ($LASTEXITCODE -ne 0) { throw "svid-client image build failed." }
 
     Write-Step "Starting SPIRE server..."
     podman-compose up -d spire-server *>$null

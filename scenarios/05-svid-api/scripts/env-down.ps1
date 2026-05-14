@@ -9,9 +9,9 @@ $ScenarioRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Push-Location $ScenarioRoot
 
 try {
-    Write-Host "Stopping workload scenario..." -ForegroundColor Cyan
+    Write-Host "Stopping SVID API scenario..." -ForegroundColor Cyan
     podman-compose down -v --remove-orphans
-    Write-Host "Workload scenario stopped." -ForegroundColor Green
+    Write-Host "SVID API scenario stopped." -ForegroundColor Green
 }
 finally {
     Pop-Location

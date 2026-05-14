@@ -17,6 +17,7 @@ try {
 
     Write-Step "Building dashboard..."
     podman build -t spiffe-spire-demo-dashboard:local -f (Join-Path $repoRoot "dashboard" "Containerfile") $repoRoot
+    if ($LASTEXITCODE -ne 0) { throw "Dashboard image build failed." }
 
     Write-Step "Starting SPIRE server..."
     podman-compose up -d spire-server *>$null

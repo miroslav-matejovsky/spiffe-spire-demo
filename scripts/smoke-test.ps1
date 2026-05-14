@@ -1,6 +1,7 @@
 # Smoke test for SPIFFE/SPIRE demo scenarios
 # Tests basic functionality of a given scenario's podman-compose stack
 
+[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
     [ValidateSet("01-simple", "02-dashboard", "03-workload", "04-tpm", "05-svid-api", "06-metrics", "07-production")]
@@ -222,7 +223,8 @@ try {
         Write-TestHeader "Port Mappings"
         foreach ($service in $config.PortMappings.GetEnumerator()) {
             $port = $service.Value
-            $containers = podman ps --format "{{.Ports}}" 2>&1 | Select-String $port
+            # Match host port binding specifically (e.g. "0.0.0.0:8090->") to avoid false positives
+            $containers = podman ps --format "{{.Ports}}" 2>&1 | Select-String ":${port}->"
             if ($containers) {
                 Test-Pass "Port $port mapped ($($service.Key))"
             } else {

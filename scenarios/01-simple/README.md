@@ -133,4 +133,4 @@ podman-compose logs -f spire-agent
 
 ---
 
-**Next:** [02-dashboard](../02-dashboard/README.md) — Learn how workloads get their own identities
+**Next:** [02-dashboard](../02-dashboard/README.md) — Add a read-only dashboard to inspect agents, entries, and trust bundles via the SPIRE server API

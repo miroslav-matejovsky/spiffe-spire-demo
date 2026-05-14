@@ -3,7 +3,6 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="refresh" content="10">
     <title>SPIRE Dashboard - {{.Title}}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -14,6 +13,9 @@
         nav a:hover { color: #fff; }
         nav a.active { color: #fff; border-bottom-color: #4dabf7; }
         nav .time { margin-left: auto; color: #6c757d; font-size: 0.85rem; }
+        nav .refresh-ctrl { color: #adb5bd; font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; }
+        nav .refresh-ctrl button { background: none; border: 1px solid #495057; color: #adb5bd; border-radius: 4px; padding: 0.2rem 0.5rem; cursor: pointer; font-size: 0.8rem; }
+        nav .refresh-ctrl button:hover { background: #495057; color: #fff; }
         main { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
         .card { background: #fff; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .card h2 { margin-bottom: 1rem; font-size: 1.2rem; }
@@ -42,11 +44,41 @@
         <a href="/entries" {{if eq .Active "entries"}}class="active"{{end}}>Entries</a>
         <a href="/bundles" {{if eq .Active "bundles"}}class="active"{{end}}>Trust Bundle</a>
         <span class="time">Updated: {{.Time}}</span>
+        <span class="refresh-ctrl">
+            <button id="refresh-toggle" aria-pressed="true" aria-label="Pause auto-refresh">Pause</button>
+            <span id="refresh-status" aria-live="polite">Auto-refresh: on</span>
+        </span>
     </nav>
     <main>
         {{if .Error}}<div class="error">{{.Error}}</div>{{end}}
         {{block "content" .}}{{end}}
     </main>
+    <script>
+        (function() {
+            var paused = false;
+            var timer = null;
+            var btn = document.getElementById('refresh-toggle');
+            var status = document.getElementById('refresh-status');
+
+            function scheduleRefresh() {
+                if (timer) clearTimeout(timer);
+                if (!paused) {
+                    timer = setTimeout(function() { location.reload(); }, 10000);
+                }
+            }
+
+            btn.addEventListener('click', function() {
+                paused = !paused;
+                btn.textContent = paused ? 'Resume' : 'Pause';
+                btn.setAttribute('aria-pressed', (!paused).toString());
+                btn.setAttribute('aria-label', paused ? 'Resume auto-refresh' : 'Pause auto-refresh');
+                status.textContent = paused ? 'Auto-refresh: off' : 'Auto-refresh: on';
+                scheduleRefresh();
+            });
+
+            scheduleRefresh();
+        })();
+    </script>
 </body>
 </html>
 {{end}}

@@ -2,6 +2,7 @@
 param()
 
 $ErrorActionPreference = "Stop"
+$PSNativeCommandUseErrorActionPreference = $true
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot ".." ".." "..")).Path
 . (Join-Path $repoRoot "scripts" "logging.ps1")
 
