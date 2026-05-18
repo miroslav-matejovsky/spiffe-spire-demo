@@ -1,0 +1,4 @@
+ this projects contains scenarios for spiffe/spire - scenarios are manages via powershell scripts which is getting hard to maintain - refactor this project to multiple golang cli where each     
+ scenario can be executed with separate binary - one cmd/folder for each scenario, scenarios are independent - dashboard is kept also as a separate cmd - create common go layout - cmd/, internal/ - keep code in cmd minimal
+ - use standard go libraries for cli args if necessary - this project is mainly educational and not a production grade tool so emphasis on comments, logging, and readability - user that runs examples should understand what is going on and how things work from the cli output
+ - enhance scenarios with interactive steps from user to improve learning experience

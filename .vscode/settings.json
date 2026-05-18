@@ -68,6 +68,7 @@
     "devid",
     "drivername",
     "genproto",
+    "gopls",
     "graphiteapp",
     "healthcheck",
     "LASTEXITCODE",
