@@ -86,6 +86,11 @@ tasks:
     cmds:
       - go run ./cmd/scenario-01-simple/ {{.CLI_ARGS}}
 
+  run-scenario-02-dashboard:
+    desc: Run the dashboard scenario
+    cmds:
+      - go run ./cmd/scenario-02-dashboard/ {{.CLI_ARGS}}
+
 # ---- maintenance tasks ----
 
   deps:
