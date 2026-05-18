@@ -52,6 +52,11 @@ func (c *Compose) Exec(service string, cmd ...string) (string, error) {
 	return c.run("podman-compose", args...)
 }
 
+// Logs returns the stdout/stderr logs of a service container.
+func (c *Compose) Logs(service string) (string, error) {
+	return c.run("podman-compose", "logs", "--no-color", service)
+}
+
 // Build builds a container image with the given tag, Containerfile, and context dir.
 func Build(tag, containerfile, contextDir string, log *logging.Logger) error {
 	args := []string{"build", "-t", tag, "-f", containerfile, contextDir}

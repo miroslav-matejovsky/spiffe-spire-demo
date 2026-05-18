@@ -108,18 +108,24 @@ func CreateEntry(compose *podman.Compose, container, spiffeID, parentID, selecto
 	return nil
 }
 
-// GetAgentID extracts the agent SPIFFE ID from the agent list output.
-// Looks for a pattern like spiffe://mirmat.org/spire/agent/join_token/<uuid>.
-func GetAgentID(compose *podman.Compose, container string, log *logging.Logger) (string, error) {
+// GetAgentIDByType extracts the agent SPIFFE ID for a given attestation type.
+// agentType is the path segment used by SPIRE (e.g. "join_token" or "x509pop").
+func GetAgentIDByType(compose *podman.Compose, container, agentType string, log *logging.Logger) (string, error) {
 	output, err := compose.Exec(container, spireBin, "agent", "list")
 	if err != nil {
 		return "", fmt.Errorf("agent list failed: %w", err)
 	}
-	re := regexp.MustCompile(`(spiffe://mirmat\.org/spire/agent/join_token/[a-f0-9-]+)`)
+	re := regexp.MustCompile(`(spiffe://mirmat\.org/spire/agent/` + regexp.QuoteMeta(agentType) + `/[^\s]+)`)
 	matches := re.FindStringSubmatch(output)
 	if len(matches) < 2 {
-		return "", fmt.Errorf("no agent SPIFFE ID found in output:\n%s", output)
+		return "", fmt.Errorf("no %s agent SPIFFE ID found in output:\n%s", agentType, output)
 	}
-	log.Detailf("agent ID: %s", matches[1])
+	log.Detailf("%s agent ID: %s", agentType, matches[1])
 	return matches[1], nil
+}
+
+// GetAgentID extracts the agent SPIFFE ID from the agent list output.
+// Looks for a pattern like spiffe://mirmat.org/spire/agent/join_token/<uuid>.
+func GetAgentID(compose *podman.Compose, container string, log *logging.Logger) (string, error) {
+	return GetAgentIDByType(compose, container, "join_token", log)
 }

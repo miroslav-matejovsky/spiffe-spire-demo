@@ -197,14 +197,15 @@ func runRegister(compose *podman.Compose, log *logging.Logger, stepMode bool) {
 }
 
 // runFetch displays the SVID fetched by the workload container.
+// The workload runs "spire-agent api watch" which writes SVID details to its
+// container logs rather than a file, so we read logs here.
 func runFetch(compose *podman.Compose, log *logging.Logger) {
 	log.Step("Fetching workload SVID...")
 	log.Info("Reading logs from the workload container to find SVID details...")
 
 	for attempt := 1; attempt <= 30; attempt++ {
-		output, err := compose.Exec("workload", "cat", "/tmp/svid-output.txt")
+		output, err := compose.Logs("workload")
 		if err == nil && strings.Contains(output, "Received 1 svid") {
-			// Filter and display relevant lines
 			for _, line := range strings.Split(output, "\n") {
 				if strings.Contains(line, "Received") ||
 					strings.Contains(line, "SPIFFE ID") ||

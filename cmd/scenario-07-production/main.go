@@ -71,7 +71,7 @@ func main() {
 			if err := certs.WriteFile(agent2CertPath, agent.CertPEM, log); err != nil {
 				return err
 			}
-			return certs.WriteFile(agent2KeyPath, agent.KeyPEM, log)
+			return certs.WritePrivateKey(agent2KeyPath, agent.KeyPEM, log)
 		},
 	)
 	if err != nil {
@@ -201,16 +201,20 @@ func main() {
 		"Creating workload registration entries that map selectors to SPIFFE IDs.\n"+
 			"In production, this would be done by a CI/CD pipeline or registration API.",
 		func() error {
-			agentID, err := spirectl.GetAgentID(compose, "spire-server", log)
+			agent1ID, err := spirectl.GetAgentIDByType(compose, "spire-server", "join_token", log)
 			if err != nil {
-				return fmt.Errorf("no agent found: %w", err)
+				return fmt.Errorf("no join_token agent found: %w", err)
+			}
+			agent2ID, err := spirectl.GetAgentIDByType(compose, "spire-server", "x509pop", log)
+			if err != nil {
+				return fmt.Errorf("no x509pop agent found: %w", err)
 			}
 			if err := spirectl.CreateEntry(compose, "spire-server",
-				"spiffe://mirmat.org/workload-1", agentID, "unix:uid:0", log); err != nil {
+				"spiffe://mirmat.org/workload-1", agent1ID, "unix:uid:0", log); err != nil {
 				return err
 			}
 			return spirectl.CreateEntry(compose, "spire-server",
-				"spiffe://mirmat.org/workload-2", agentID, "unix:uid:0", log)
+				"spiffe://mirmat.org/workload-2", agent2ID, "unix:uid:0", log)
 		},
 	)
 	if err != nil {

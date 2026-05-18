@@ -55,14 +55,19 @@ tasks:
       - "internal/**/*.go"
       - go.mod
       - go.sum
+    generates:
+      - "bin/scenario-01-simple{{exeExt}}"
+      - "bin/scenario-02-dashboard{{exeExt}}"
+      - "bin/scenario-03-workload{{exeExt}}"
+      - "bin/scenario-04-tpm{{exeExt}}"
+      - "bin/scenario-05-svid-api{{exeExt}}"
+      - "bin/scenario-06-metrics{{exeExt}}"
+      - "bin/scenario-07-production{{exeExt}}"
 
   clean:
     desc: Remove all built binaries
     cmds:
-      - cmd: rm -rf bin/
-        platforms: [linux, darwin]
-      - cmd: if exist "bin" rmdir /s /q "bin"
-        platforms: [windows]
+      - rm -f bin/*
 
   lint:
     desc: Run Go linter
@@ -73,6 +78,13 @@ tasks:
     desc: Run Go tests
     cmds:
       - go test ./...
+
+# ---- running stuff ----
+
+  run-scenario-01-simple:
+    desc: Run the simple scenario
+    cmds:
+      - go run ./cmd/scenario-01-simple/
 
 # ---- maintenance tasks ----
 

@@ -111,12 +111,23 @@ func GenerateAgentCert(ca *CA, cn string) (*AgentCert, error) {
 }
 
 // WriteFile writes PEM data to a file, creating parent directories as needed.
+// Use this for public certificates (mode 0644). For private keys use WritePrivateKey.
 func WriteFile(path string, data []byte, log *logging.Logger) error {
+	return writeWithMode(path, data, 0o644, log)
+}
+
+// WritePrivateKey writes key material to a file with restricted permissions (mode 0600).
+func WritePrivateKey(path string, data []byte, log *logging.Logger) error {
+	return writeWithMode(path, data, 0o600, log)
+}
+
+// writeWithMode writes data to path with the given file mode, creating parent directories as needed.
+func writeWithMode(path string, data []byte, mode os.FileMode, log *logging.Logger) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("create directory %s: %w", dir, err)
 	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := os.WriteFile(path, data, mode); err != nil {
 		return fmt.Errorf("write %s: %w", path, err)
 	}
 	log.Detailf("wrote %s", path)
