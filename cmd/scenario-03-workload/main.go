@@ -1,136 +1,104 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/miroslav-matejovsky/spiffe-spire-demo/internal/logging"
 	"github.com/miroslav-matejovsky/spiffe-spire-demo/internal/podman"
+	"github.com/miroslav-matejovsky/spiffe-spire-demo/internal/scenario"
 	"github.com/miroslav-matejovsky/spiffe-spire-demo/internal/spirectl"
-	"github.com/miroslav-matejovsky/spiffe-spire-demo/internal/step"
 )
 
 func main() {
-	stepMode := flag.Bool("step", false, "pause between steps for interactive learning")
-	verbose := flag.Bool("verbose", false, "show detailed debug output")
-	down := flag.Bool("down", false, "tear down the scenario")
-	flag.Parse()
+	scenario.Run(scenario.Config{
+		Name:    "Workload",
+		DirName: "03-workload",
+		Up:      up,
+		Done:    done,
+		Subcommands: map[string]scenario.Subcommand{
+			"register": {Desc: "Register workload entry with SPIRE server", Run: register},
+			"fetch":    {Desc: "Fetch and display workload SVID from container logs", Run: fetch},
+		},
+	})
+}
 
-	log := logging.New(*verbose)
-	repoRoot := findRepoRoot()
-	scenarioDir := filepath.Join(repoRoot, "scenarios", "03-workload")
-	compose := podman.NewCompose(scenarioDir, log)
-
-	// Handle subcommands
-	args := flag.Args()
-	if len(args) > 0 {
-		switch args[0] {
-		case "register":
-			runRegister(compose, log, *stepMode)
-			return
-		case "fetch":
-			runFetch(compose, log)
-			return
-		}
-	}
-
-	if *down {
-		log.Step("Tearing down workload scenario...")
-		if err := compose.Down(); err != nil {
-			log.Errorf("teardown failed: %v", err)
-			os.Exit(1)
-		}
-		log.Ok("Workload scenario stopped.")
-		return
-	}
-
-	runner := step.New(log, *stepMode)
-
-	// --- Step 1: Build Dashboard ---
-	err := runner.Run(
+func up(ctx *scenario.Context) error {
+	err := ctx.Runner.Run(
 		"Building Dashboard Image",
 		"Building the dashboard container for monitoring SPIRE state.",
 		func() error {
-			containerfile := filepath.Join(repoRoot, "dashboard", "Containerfile")
-			return podman.Build("spiffe-spire-demo-dashboard:local", containerfile, repoRoot, log)
+			containerfile := filepath.Join(ctx.RepoRoot, "dashboard", "Containerfile")
+			return podman.Build("spiffe-spire-demo-dashboard:local", containerfile, ctx.RepoRoot, ctx.Log)
 		},
 	)
 	if err != nil {
-		os.Exit(1)
+		return err
 	}
 
-	// --- Step 2: Start SPIRE Server ---
-	err = runner.Run(
+	err = ctx.Runner.Run(
 		"Starting SPIRE Server",
 		"Starting the SPIRE server - the trust domain authority for mirmat.org.",
 		func() error {
-			return compose.Up("spire-server")
+			return ctx.Compose.Up("spire-server")
 		},
 	)
 	if err != nil {
-		os.Exit(1)
+		return err
 	}
 
-	// --- Step 3: Healthcheck ---
-	err = runner.Run(
+	err = ctx.Runner.Run(
 		"Waiting for SPIRE Server Health",
 		"Polling server healthcheck until ready.",
 		func() error {
-			return spirectl.Healthcheck(compose, "spire-server", log)
+			return spirectl.Healthcheck(ctx.Compose, "spire-server", ctx.Log)
 		},
 	)
 	if err != nil {
-		os.Exit(1)
+		return err
 	}
 
-	// --- Step 4: Token + Agent ---
-	err = runner.Run(
+	err = ctx.Runner.Run(
 		"Starting SPIRE Agent with Join Token",
 		"Generate a join token, then start the agent. The agent exposes the\n"+
 			"Workload API socket that workloads connect to for identity.",
 		func() error {
-			token, err := spirectl.GenerateToken(compose, "spire-server", "spiffe://mirmat.org/myagent", log)
+			token, err := spirectl.GenerateToken(ctx.Compose, "spire-server", "spiffe://mirmat.org/myagent", ctx.Log)
 			if err != nil {
 				return err
 			}
 			agentContainer := "workload-spire-agent"
-			podman.RemoveContainer(agentContainer, log)
-			return compose.RunDetached(agentContainer, "spire-agent",
+			podman.RemoveContainer(agentContainer, ctx.Log)
+			return ctx.Compose.RunDetached(agentContainer, "spire-agent",
 				"-config", "/opt/spire/conf/agent/agent.conf",
 				"-joinToken", token,
 			)
 		},
 	)
 	if err != nil {
-		os.Exit(1)
+		return err
 	}
 
-	// --- Step 5: Attestation ---
-	err = runner.Run(
+	err = ctx.Runner.Run(
 		"Waiting for Agent Attestation",
 		"The agent attests to the server using the join token.",
 		func() error {
-			_, err := spirectl.WaitForAgent(compose, "spire-server", "join_token", log)
+			_, err := spirectl.WaitForAgent(ctx.Compose, "spire-server", "join_token", ctx.Log)
 			return err
 		},
 	)
 	if err != nil {
-		os.Exit(1)
+		return err
 	}
 
-	// --- Step 6: Start Workload Container ---
-	err = runner.Run(
+	err = ctx.Runner.Run(
 		"Starting Workload Container",
 		"The workload container shares the Workload API socket with the SPIRE agent\n"+
 			"via a named volume. Once a workload entry is registered for this container,\n"+
 			"it will automatically receive an X.509 SVID.",
 		func() error {
-			if err := compose.UpNoBuild("workload"); err != nil {
+			if err := ctx.Compose.UpNoBuild("workload"); err != nil {
 				return err
 			}
 			time.Sleep(3 * time.Second)
@@ -138,40 +106,41 @@ func main() {
 		},
 	)
 	if err != nil {
-		os.Exit(1)
+		return err
 	}
 
-	// --- Step 7: Start Dashboard ---
-	err = runner.Run(
+	err = ctx.Runner.Run(
 		"Starting Dashboard",
 		"Starting the web dashboard for monitoring.",
 		func() error {
-			if err := compose.UpNoBuild("dashboard"); err != nil {
+			if err := ctx.Compose.UpNoBuild("dashboard"); err != nil {
 				return err
 			}
-			return waitForDashboard("http://127.0.0.1:8080/health", log)
+			ctx.WaitForDashboard("http://127.0.0.1:8080/health")
+			return nil
 		},
 	)
 	if err != nil {
-		os.Exit(1)
+		return err
 	}
 
-	// --- Done ---
-	log.Step("Workload scenario is ready!")
-	log.Info("Dashboard: http://localhost:8080")
-	log.Info("")
-	log.Info("Next steps:")
-	log.Info("  1. Register a workload: scenario-03-workload register")
-	log.Info("  2. Fetch the SVID:      scenario-03-workload fetch")
-	log.Info("")
-	log.Info("Tear down with: scenario-03-workload --down")
+	return nil
 }
 
-// runRegister registers a workload entry with the SPIRE server.
-func runRegister(compose *podman.Compose, log *logging.Logger, stepMode bool) {
-	runner := step.New(log, stepMode)
+func done(ctx *scenario.Context) {
+	ctx.Log.Step("Workload scenario is ready!")
+	ctx.Log.Info("Dashboard: http://localhost:8080")
+	ctx.Log.Info("")
+	ctx.Log.Info("Next steps:")
+	ctx.Log.Info("  1. Register a workload: scenario-03-workload register")
+	ctx.Log.Info("  2. Fetch the SVID:      scenario-03-workload fetch")
+	ctx.Log.Info("")
+	ctx.Log.Info("Tear down with: scenario-03-workload down")
+}
 
-	err := runner.Run(
+// register registers a workload entry with the SPIRE server.
+func register(ctx *scenario.Context) error {
+	return ctx.Runner.Run(
 		"Registering Workload",
 		"A workload registration entry tells SPIRE: 'any process matching this\n"+
 			"selector should receive this SPIFFE ID'. We use unix:uid:0 (root) as\n"+
@@ -179,32 +148,25 @@ func runRegister(compose *podman.Compose, log *logging.Logger, stepMode bool) {
 			"SPIFFE ID: spiffe://mirmat.org/myworkload\n"+
 			"Selector:  unix:uid:0 (root user inside the container)",
 		func() error {
-			agentID, err := spirectl.GetAgentID(compose, "spire-server", log)
+			agentID, err := spirectl.GetAgentID(ctx.Compose, "spire-server", ctx.Log)
 			if err != nil {
-				return fmt.Errorf("no attested agent found - run scenario startup first: %w", err)
+				return fmt.Errorf("no attested agent found - run 'up' first: %w", err)
 			}
-			return spirectl.CreateEntry(compose, "spire-server",
-				"spiffe://mirmat.org/myworkload", agentID, "unix:uid:0", log)
+			return spirectl.CreateEntry(ctx.Compose, "spire-server",
+				"spiffe://mirmat.org/myworkload", agentID, "unix:uid:0", ctx.Log)
 		},
 	)
-	if err != nil {
-		os.Exit(1)
-	}
-
-	log.Info("")
-	log.Info("The workload container will now automatically receive its SVID.")
-	log.Info("Run 'scenario-03-workload fetch' to see the issued SVID.")
 }
 
-// runFetch displays the SVID fetched by the workload container.
+// fetch displays the SVID fetched by the workload container.
 // The workload runs "spire-agent api watch" which writes SVID details to its
-// container logs rather than a file, so we read logs here.
-func runFetch(compose *podman.Compose, log *logging.Logger) {
-	log.Step("Fetching workload SVID...")
-	log.Info("Reading logs from the workload container to find SVID details...")
+// container logs rather than a file.
+func fetch(ctx *scenario.Context) error {
+	ctx.Log.Step("Fetching workload SVID...")
+	ctx.Log.Info("Reading logs from the workload container to find SVID details...")
 
 	for attempt := 1; attempt <= 30; attempt++ {
-		output, err := compose.Logs("workload")
+		output, err := ctx.Compose.Logs("workload")
 		if err == nil && strings.Contains(output, "Received 1 svid") {
 			for _, line := range strings.Split(output, "\n") {
 				if strings.Contains(line, "Received") ||
@@ -214,51 +176,15 @@ func runFetch(compose *podman.Compose, log *logging.Logger) {
 					fmt.Println(line)
 				}
 			}
-			log.Ok("SVID fetched successfully!")
-			log.Info("The output above shows the X.509-SVID issued to the workload.")
-			return
-		}
-		log.Detailf("attempt %d/30: waiting for SVID...", attempt)
-		time.Sleep(2 * time.Second)
-	}
-
-	log.Error("Workload has not received an SVID yet.")
-	log.Info("Make sure 'scenario-03-workload register' completed successfully.")
-	os.Exit(1)
-}
-
-func waitForDashboard(url string, log *logging.Logger) error {
-	log.Info("Waiting for dashboard to become ready...")
-	client := &http.Client{Timeout: 2 * time.Second}
-	for attempt := 1; attempt <= 30; attempt++ {
-		resp, err := client.Get(url)
-		if err == nil && resp.StatusCode == 200 {
-			resp.Body.Close()
-			log.Ok("Dashboard is ready.")
+			ctx.Log.Ok("SVID fetched successfully!")
+			ctx.Log.Info("The output above shows the X.509-SVID issued to the workload.")
 			return nil
 		}
-		if resp != nil {
-			resp.Body.Close()
-		}
-		log.Detailf("attempt %d/30: waiting for dashboard...", attempt)
+		ctx.Log.Detailf("attempt %d/30: waiting for SVID...", attempt)
 		time.Sleep(2 * time.Second)
 	}
-	log.Warn("Dashboard did not respond in time.")
-	return nil
-}
 
-func findRepoRoot() string {
-	cwd, _ := os.Getwd()
-	dir := cwd
-	for {
-		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-			return dir
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-	return cwd
+	ctx.Log.Error("Workload has not received an SVID yet.")
+	ctx.Log.Info("Make sure 'scenario-03-workload register' completed successfully.")
+	return fmt.Errorf("SVID not found after 30 attempts")
 }

@@ -35,16 +35,16 @@ Work through the scenarios in order -- each builds on concepts from the previous
 task build
 
 # Run the simplest scenario
-./bin/scenario-01-simple
+./bin/scenario-01-simple up
 
 # Run with guided learning mode (pauses between steps)
-./bin/scenario-01-simple --step
+./bin/scenario-01-simple step
 
 # Verbose output for debugging
-./bin/scenario-01-simple --verbose
+./bin/scenario-01-simple up --verbose
 
 # Tear down when done
-./bin/scenario-01-simple --down
+./bin/scenario-01-simple down
 ```
 
 ## Building
@@ -62,12 +62,12 @@ go build -o bin/scenario-01-simple ./cmd/scenario-01-simple/
 
 ## Guided Learning Mode
 
-All scenario binaries support `--step` flag for interactive learning. In this mode,
+All scenario binaries support the `step` command for interactive learning. In this mode,
 each step pauses after printing an explanation, giving you time to understand what
 is happening before continuing. Press Enter to proceed to the next step.
 
 ```bash
-./bin/scenario-05-svid-api --step
+./bin/scenario-05-svid-api step
 ```
 
 ## Project Structure
@@ -83,6 +83,7 @@ cmd/
   svid-client/             mTLS demo client (scenario 05)
 internal/
   logging/                 Colored terminal output
+  scenario/                Unified CLI framework for scenario binaries
   step/                    Interactive step runner framework
   podman/                  Typed wrapper for podman/podman-compose
   spirectl/                SPIRE server CLI helpers
