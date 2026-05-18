@@ -82,6 +82,12 @@ func Run(cfg Config) {
 
 	log := logging.New(*verbose)
 
+	// Preflight: verify podman and podman-compose are available
+	if err := podman.CheckAvailability(); err != nil {
+		log.Error(err.Error())
+		os.Exit(1)
+	}
+
 	repoRoot, err := findRepoRoot()
 	if err != nil {
 		log.Error("Could not find repository root (no go.mod found in parent directories).")

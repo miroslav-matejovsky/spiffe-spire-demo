@@ -5,10 +5,52 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/miroslav-matejovsky/spiffe-spire-demo/internal/logging"
 )
+
+// CheckAvailability verifies that podman and podman-compose are installed and
+// that the podman daemon/machine is reachable. Returns a user-friendly error
+// with remediation steps on failure.
+func CheckAvailability() error {
+	if _, err := exec.LookPath("podman"); err != nil {
+		return fmt.Errorf("podman not found on PATH\n\n" +
+			"Podman is required to run scenarios.\n" +
+			"Install it from: https://podman.io/docs/installation")
+	}
+
+	if _, err := exec.LookPath("podman-compose"); err != nil {
+		return fmt.Errorf("podman-compose not found on PATH\n\n" +
+			"podman-compose is required to run scenarios.\n" +
+			"Install it with: pip install podman-compose")
+	}
+
+	// Check if podman daemon/machine is reachable
+	cmd := exec.Command("podman", "info")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	cmd.Stdout = nil
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("podman is installed but not reachable\n\n%s", podmanMachineHint())
+	}
+
+	return nil
+}
+
+// podmanMachineHint returns platform-appropriate remediation for unreachable podman.
+func podmanMachineHint() string {
+	if runtime.GOOS == "linux" {
+		return "Check that the podman service is running:\n" +
+			"  systemctl --user start podman.socket"
+	}
+	return "Try:\n" +
+		"  podman machine start\n\n" +
+		"If this is your first time using Podman:\n" +
+		"  podman machine init\n" +
+		"  podman machine start"
+}
 
 // Compose wraps podman-compose operations for a specific compose project.
 type Compose struct {
@@ -126,6 +168,11 @@ func (c *Compose) run(name string, args ...string) (string, error) {
 
 	if err := cmd.Run(); err != nil {
 		combined := stdout.String() + stderr.String()
+		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 125 {
+			return combined, fmt.Errorf("%s %s: %w\n\n"+
+				"Podman command failed (exit 125). Machine may have stopped.\n"+
+				"Try: podman machine start", name, strings.Join(args, " "), err)
+		}
 		return combined, fmt.Errorf("%s %s: %w\n%s", name, strings.Join(args, " "), err, combined)
 	}
 
