@@ -5,11 +5,16 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 
 	"github.com/miroslav-matejovsky/spiffe-spire-demo/internal/logging"
 )
+
+// projectNameRe extracts the project name from a compose.yml top-level name field.
+var projectNameRe = regexp.MustCompile(`(?m)^name:\s+(\S+)`)
 
 // CheckAvailability verifies that podman and podman-compose are installed and
 // that the podman daemon/machine is reachable. Returns a user-friendly error
@@ -56,13 +61,50 @@ func podmanMachineHint() string {
 type Compose struct {
 	// Dir is the working directory containing compose.yml
 	Dir string
+	// ProjectName is the compose project name read from compose.yml.
+	// Used to identify running containers belonging to this scenario.
+	ProjectName string
 	// Log is used for verbose output
 	Log *logging.Logger
 }
 
 // NewCompose creates a Compose instance for the given scenario directory.
+// It reads the compose.yml to extract the project name for container lookups.
 func NewCompose(dir string, log *logging.Logger) *Compose {
-	return &Compose{Dir: dir, Log: log}
+	return &Compose{Dir: dir, ProjectName: parseProjectName(dir), Log: log}
+}
+
+// parseProjectName reads the compose.yml in dir and returns the top-level name field.
+func parseProjectName(dir string) string {
+	data, err := os.ReadFile(filepath.Join(dir, "compose.yml"))
+	if err != nil {
+		return ""
+	}
+	m := projectNameRe.FindSubmatch(data)
+	if len(m) < 2 {
+		return ""
+	}
+	return strings.TrimSpace(string(m[1]))
+}
+
+// HasRunningContainers returns true if any containers from this compose project
+// are currently running. Used to detect if a previous scenario run was not torn down.
+func (c *Compose) HasRunningContainers() bool {
+	if c.ProjectName == "" {
+		return false
+	}
+	cmd := exec.Command("podman", "ps", "--format", "{{.Names}}")
+	out, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	prefix := c.ProjectName + "-"
+	for _, line := range strings.Split(string(out), "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 // Up starts the specified services (or all if none given).

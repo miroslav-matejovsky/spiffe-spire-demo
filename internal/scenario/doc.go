@@ -9,6 +9,11 @@
 //   - down: tear down the scenario
 //   - step: start with interactive pauses between steps
 //
+// Before starting a scenario, Run checks whether any containers from the compose
+// project are already running. If they are, it exits with a clear message asking
+// the user to run "down" first. This prevents join-token reuse failures and other
+// stale-state issues that occur when a previous run was not torn down.
+//
 // Scenarios may register additional subcommands (e.g. "register", "fetch") via
 // the Subcommands field in Config.
 package scenario

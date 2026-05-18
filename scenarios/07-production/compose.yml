@@ -82,6 +82,7 @@ services:
       context: ../..
       dockerfile: dashboard/Containerfile
     hostname: dashboard
+    user: "0"
     depends_on: ["spire-server"]
     volumes:
       - spire-server-socket:/tmp/spire-server/private

@@ -106,6 +106,11 @@ func Run(cfg Config) {
 
 	switch command {
 	case "up":
+		if compose.HasRunningContainers() {
+			log.Errorf("Scenario '%s' is already running.", cfg.Name)
+			log.Errorf("Tear it down first:  %s down", filepath.Base(os.Args[0]))
+			os.Exit(1)
+		}
 		ctx.Runner = step.New(log, false)
 		if err := cfg.Up(ctx); err != nil {
 			os.Exit(1)
@@ -115,6 +120,11 @@ func Run(cfg Config) {
 		}
 
 	case "step":
+		if compose.HasRunningContainers() {
+			log.Errorf("Scenario '%s' is already running.", cfg.Name)
+			log.Errorf("Tear it down first:  %s down", filepath.Base(os.Args[0]))
+			os.Exit(1)
+		}
 		ctx.Runner = step.New(log, true)
 		if err := cfg.Up(ctx); err != nil {
 			os.Exit(1)
