@@ -84,7 +84,7 @@ tasks:
   run-scenario-01-simple:
     desc: Run the simple scenario
     cmds:
-      - go run ./cmd/scenario-01-simple/ step
+      - go run ./cmd/scenario-01-simple/ {{.CLI_ARGS}}
 
 # ---- maintenance tasks ----
 
