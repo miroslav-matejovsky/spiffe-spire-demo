@@ -91,6 +91,11 @@ tasks:
     cmds:
       - go run ./cmd/scenario-02-dashboard/ {{.CLI_ARGS}}
 
+  run-scenario-03-workload:
+    desc: Run the workload scenario
+    cmds:
+      - go run ./cmd/scenario-03-workload/ {{.CLI_ARGS}}
+
 # ---- maintenance tasks ----
 
   deps:
