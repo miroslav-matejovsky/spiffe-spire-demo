@@ -96,6 +96,26 @@ tasks:
     cmds:
       - go run ./cmd/scenario-03-workload/ {{.CLI_ARGS}}
 
+  run-scenario-04-tpm:
+    desc: Run the TPM scenario
+    cmds:
+      - go run ./cmd/scenario-04-tpm/ {{.CLI_ARGS}}
+
+  run-scenario-05-svid-api:
+    desc: Run the SVID API scenario
+    cmds:
+      - go run ./cmd/scenario-05-svid-api/ {{.CLI_ARGS}}
+
+  run-scenario-06-metrics:
+    desc: Run the metrics scenario
+    cmds:
+      - go run ./cmd/scenario-06-metrics/ {{.CLI_ARGS}}
+
+  run-scenario-07-production:
+    desc: Run the production scenario
+    cmds:
+      - go run ./cmd/scenario-07-production/ {{.CLI_ARGS}}
+
 # ---- maintenance tasks ----
 
   deps:
