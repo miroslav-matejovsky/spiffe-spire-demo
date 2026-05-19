@@ -12,15 +12,15 @@ SPIRE is the reference implementation of SPIFFE, handling identity issuance, att
 
 Work through the scenarios in order -- each builds on concepts from the previous one.
 
-| # | Scenario | Concepts | Description |
-|---|----------|----------|-------------|
-| 1 | [01-simple](scenarios/01-simple/README.md) | Trust domains, SPIFFE IDs, node attestation | Minimal SPIRE server and agent with join token attestation |
-| 2 | [02-dashboard](scenarios/02-dashboard/README.md) | SPIRE dashboard, server API socket, gRPC | Add a read-only dashboard to visualize agents, entries, and trust bundles |
-| 3 | [03-workload](scenarios/03-workload/README.md) | Workload registration, Unix attestor, SVID lifecycle | Add a workload container and fetch its X.509 SVID |
-| 4 | [04-tpm](scenarios/04-tpm/README.md) | TPM concepts, hardware identity, certificate-based attestation | Certificate-based node attestation (simulating TPM DevID) |
-| 5 | [05-svid-api](scenarios/05-svid-api/README.md) | go-spiffe SDK, mTLS, certificate rotation | Two Go services communicating via mTLS using SVIDs |
-| 6 | [06-metrics](scenarios/06-metrics/README.md) | Telemetry, Prometheus, StatsD, Graphite, dashboard | Monitor SPIRE while exploring it through the dashboard |
-| 7 | [07-production](scenarios/07-production/README.md) | Mixed attestation, multi-agent SPIRE, management, telemetry | Combine workloads, dashboard, and metrics into a production-like lab |
+| #   | Scenario                                           | Concepts                                                       | Description                                                               |
+| --- | -------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| 1   | [01-simple](scenarios/01-simple/README.md)         | Trust domains, SPIFFE IDs, node attestation                    | Minimal SPIRE server and agent with join token attestation                |
+| 2   | [02-dashboard](scenarios/02-dashboard/README.md)   | SPIRE dashboard, server API socket, gRPC                       | Add a read-only dashboard to visualize agents, entries, and trust bundles |
+| 3   | [03-workload](scenarios/03-workload/README.md)     | Workload registration, Unix attestor, SVID lifecycle           | Add a workload container and fetch its X.509 SVID                         |
+| 4   | [04-tpm](scenarios/04-tpm/README.md)               | TPM concepts, hardware identity, certificate-based attestation | Certificate-based node attestation (simulating TPM DevID)                 |
+| 5   | [05-svid-api](scenarios/05-svid-api/README.md)     | go-spiffe SDK, mTLS, certificate rotation                      | Two Go services communicating via mTLS using SVIDs                        |
+| 6   | [06-metrics](scenarios/06-metrics/README.md)       | Telemetry, Prometheus, StatsD, Graphite, dashboard             | Monitor SPIRE while exploring it through the dashboard                    |
+| 7   | [07-production](scenarios/07-production/README.md) | Mixed attestation, multi-agent SPIRE, management, telemetry    | Combine workloads, dashboard, and metrics into a production-like lab      |
 
 ## Prerequisites
 

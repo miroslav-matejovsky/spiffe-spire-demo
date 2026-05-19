@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	agentv1 "github.com/spiffe/spire-api-sdk/proto/spire/api/server/agent/v1"
-	bundlev1 "github.com/spiffe/spire-api-sdk/proto/spire/api/server/bundle/v1"
-	entryv1 "github.com/spiffe/spire-api-sdk/proto/spire/api/server/entry/v1"
+	agent "github.com/spiffe/spire-api-sdk/proto/spire/api/server/agent/v1"
+	bundle "github.com/spiffe/spire-api-sdk/proto/spire/api/server/bundle/v1"
+	entry "github.com/spiffe/spire-api-sdk/proto/spire/api/server/entry/v1"
 	apitypes "github.com/spiffe/spire-api-sdk/proto/spire/api/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -65,9 +65,9 @@ type bundleData struct {
 }
 
 type dashboard struct {
-	agents  agentv1.AgentClient
-	entries entryv1.EntryClient
-	bundles bundlev1.BundleClient
+	agents  agent.AgentClient
+	entries entry.EntryClient
+	bundles bundle.BundleClient
 	pages   map[string]*template.Template
 }
 
@@ -83,9 +83,9 @@ func newDashboard(conn *grpc.ClientConn) *dashboard {
 	}
 
 	return &dashboard{
-		agents:  agentv1.NewAgentClient(conn),
-		entries: entryv1.NewEntryClient(conn),
-		bundles: bundlev1.NewBundleClient(conn),
+		agents:  agent.NewAgentClient(conn),
+		entries: entry.NewEntryClient(conn),
+		bundles: bundle.NewBundleClient(conn),
 		pages: map[string]*template.Template{
 			"index":   parsePage("index.html"),
 			"agents":  parsePage("agents.html"),
@@ -121,7 +121,7 @@ func (d *dashboard) handleIndex(w http.ResponseWriter, r *http.Request) {
 	overview := overviewData{Healthy: true}
 	var errors []string
 
-	agentResp, err := d.agents.ListAgents(ctx, &agentv1.ListAgentsRequest{})
+	agentResp, err := d.agents.ListAgents(ctx, &agent.ListAgentsRequest{})
 	if err != nil {
 		overview.Healthy = false
 		errors = append(errors, fmt.Sprintf("agents: %v", err))
@@ -129,7 +129,7 @@ func (d *dashboard) handleIndex(w http.ResponseWriter, r *http.Request) {
 		overview.AgentCount = len(agentResp.Agents)
 	}
 
-	entryResp, err := d.entries.ListEntries(ctx, &entryv1.ListEntriesRequest{})
+	entryResp, err := d.entries.ListEntries(ctx, &entry.ListEntriesRequest{})
 	if err != nil {
 		overview.Healthy = false
 		errors = append(errors, fmt.Sprintf("entries: %v", err))
@@ -137,7 +137,7 @@ func (d *dashboard) handleIndex(w http.ResponseWriter, r *http.Request) {
 		overview.EntryCount = len(entryResp.Entries)
 	}
 
-	bundleResp, err := d.bundles.GetBundle(ctx, &bundlev1.GetBundleRequest{})
+	bundleResp, err := d.bundles.GetBundle(ctx, &bundle.GetBundleRequest{})
 	if err != nil {
 		overview.Healthy = false
 		errors = append(errors, fmt.Sprintf("bundle: %v", err))
@@ -158,7 +158,7 @@ func (d *dashboard) handleAgents(w http.ResponseWriter, r *http.Request) {
 
 	data := pageData{Title: "Agents", Active: "agents"}
 
-	resp, err := d.agents.ListAgents(ctx, &agentv1.ListAgentsRequest{})
+	resp, err := d.agents.ListAgents(ctx, &agent.ListAgentsRequest{})
 	if err != nil {
 		data.Error = fmt.Sprintf("Failed to list agents: %v", err)
 		d.render(w, "agents", data)
@@ -185,7 +185,7 @@ func (d *dashboard) handleEntries(w http.ResponseWriter, r *http.Request) {
 
 	data := pageData{Title: "Entries", Active: "entries"}
 
-	resp, err := d.entries.ListEntries(ctx, &entryv1.ListEntriesRequest{})
+	resp, err := d.entries.ListEntries(ctx, &entry.ListEntriesRequest{})
 	if err != nil {
 		data.Error = fmt.Sprintf("Failed to list entries: %v", err)
 		d.render(w, "entries", data)
@@ -215,7 +215,7 @@ func (d *dashboard) handleBundles(w http.ResponseWriter, r *http.Request) {
 
 	data := pageData{Title: "Trust Bundle", Active: "bundles"}
 
-	resp, err := d.bundles.GetBundle(ctx, &bundlev1.GetBundleRequest{})
+	resp, err := d.bundles.GetBundle(ctx, &bundle.GetBundleRequest{})
 	if err != nil {
 		data.Error = fmt.Sprintf("Failed to get bundle: %v", err)
 		d.render(w, "bundles", data)
@@ -236,7 +236,7 @@ func (d *dashboard) handleHealth(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
 
-	_, err := d.bundles.GetBundle(ctx, &bundlev1.GetBundleRequest{})
+	_, err := d.bundles.GetBundle(ctx, &bundle.GetBundleRequest{})
 	if err != nil {
 		http.Error(w, "SPIRE server unreachable: "+err.Error(), http.StatusServiceUnavailable)
 		return
