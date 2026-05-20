@@ -43,7 +43,7 @@
       <h2>Overview</h2>
       <div class="callout callout-info">
         <div class="callout-title">Core shape</div>
-        <p>SPIRE consists of a Server, one or more Agents, and the Workload API. Server acts as trust anchor and signing authority. Agents run close to workloads. Workloads connect to the local Workload API to fetch SVIDs and trust bundles.</p>
+        <p>SPIRE consists of a Server, one or more Agents, and the Workload API. Server acts as trust anchor and signing authority. One Agent runs on each VM or physical machine, connecting back to a centralized Server over the network. This hub-and-spoke pattern works well even with restricted or intermittent connectivity. Workloads connect to the local Workload API to fetch SVIDs and trust bundles.</p>
       </div>
       <div class="card-grid">
         <div class="card">
@@ -107,11 +107,11 @@
           <text x="600" y="446" text-anchor="middle" font-size="18" font-weight="700" fill="#9a3412">Workload C</text>
           <text x="400" y="490" text-anchor="middle" font-size="14" fill="#64748b">Applications fetch X.509-SVIDs, JWT-SVIDs, and trust bundles from local agent</text>
         </svg>
-        <div class="diagram-caption">Server signs identities for trust domain. Agent brokers access. Workloads never talk to server directly for day-to-day identity fetches.</div>
+        <div class="diagram-caption">Server signs identities for trust domain. Agent brokers access. Workloads never talk to server directly for day-to-day identity fetches. In typical deployments, Server sits in a datacenter or cloud with stable access, while Agents run on distributed VMs and physical machines.</div>
       </div>
 
       <h2>SPIRE Server</h2>
-      <p>SPIRE Server is central authority for trust domain. It stores registration entries, signs SVIDs using its CA key, performs node attestation, and publishes bundle material used to verify identities. In small labs one server may handle everything. In larger setups it is usually protected and backed by durable storage.</p>
+      <p>SPIRE Server is central authority for trust domain. It stores registration entries, signs SVIDs using its CA key, performs node attestation, and publishes bundle material used to verify identities. Server typically runs centralized in a datacenter or cloud environment where it has stable network access, durable storage, and operational visibility. Agents across the organization connect to it over WAN or VPN links.</p>
       <ul>
         <li>Central authority for trust domain and source of truth for registration state.</li>
         <li>Stores registration entries that map selectors to SPIFFE IDs.</li>
@@ -126,13 +126,14 @@
       <p>In repo, Scenario 01 shows bare server and agent bootstrap. Scenario 02 adds dashboard flow around same core server responsibilities.</p>
 
       <h2>SPIRE Agent</h2>
-      <p>SPIRE Agent runs on every node that hosts workloads. It proves node identity to server, receives an agent SVID, fetches registration data, generates workload keys, and caches workload SVIDs close to processes that need them.</p>
+      <p>SPIRE Agent runs on every VM or physical machine that hosts workloads. It proves node identity to server, receives an agent SVID, fetches registration data, generates workload keys, and caches workload SVIDs close to processes that need them.</p>
       <ul>
-        <li>Runs on every node with workloads.</li>
+        <li>Runs on every VM or physical machine that hosts workloads.</li>
         <li>Performs node attestation to prove identity to server.</li>
         <li>Caches SVIDs for workloads so applications can fetch them locally.</li>
+        <li>Caches SVIDs locally so workloads continue to operate even when connectivity to the central server is intermittent or temporarily unavailable.</li>
         <li>Exposes Workload API as Unix Domain Socket.</li>
-        <li>Performs workload attestation by checking PID, UID, and container metadata.</li>
+        <li>Performs workload attestation by checking PID, UID, process path, or service identity.</li>
       </ul>
       <div class="callout callout-info">
         <div class="callout-title">Agent plugins</div>
@@ -152,7 +153,7 @@ Common calls:
       <p><a href="https://github.com/spiffe/go-spiffe">go-spiffe</a> wraps API for Go applications and handles watchers, source updates, and identity parsing. Agent also pushes updated SVIDs before expiry so workloads get auto-rotation without restart. Scenario 05 in repo demonstrates this model with mTLS client and server.</p>
       <div class="callout callout-warning">
         <div class="callout-title">Why local socket matters</div>
-        <p>Workloads only need access to local agent socket. Server can stay isolated. Identity checks stay tied to local process context.</p>
+        <p>Workloads only need access to local agent socket. This is especially important for machines with limited or intermittent server connectivity. The agent's local cache ensures workloads can fetch and use valid SVIDs even during server outages or network disruptions. Workloads never need direct access to the central SPIRE server. Identity checks stay tied to local process context.</p>
       </div>
 
       <h2>SVID Issuance Flow</h2>
@@ -188,7 +189,7 @@ Common calls:
         </div>
         <div class="learning-step">
           <div class="step-marker">8</div>
-          <div class="step-content"><h4>Agent caches results</h4><p>Agent stores workload SVIDs and bundle material in local cache and exposes them through Workload API.</p></div>
+          <div class="step-content"><h4>Agent caches results</h4><p>Agent stores workload SVIDs and bundle material in local cache and exposes them through Workload API. This local cache is critical -- workloads keep functioning with cached SVIDs even if the connection to the central server drops.</p></div>
         </div>
         <div class="learning-step">
           <div class="step-marker">9</div>
@@ -201,7 +202,7 @@ Common calls:
       </div>
 
       <h2>Plugin Architecture</h2>
-      <p>SPIRE stays flexible by defining narrow plugin types. Same control plane can fit laptops, VMs, Kubernetes, and cloud-native environments by swapping plugin implementations.</p>
+      <p>SPIRE stays flexible by defining narrow plugin types. Same control plane can fit Windows servers, Linux VMs, physical machines, and containerized environments by swapping plugin implementations.</p>
       <table>
         <thead>
           <tr>
@@ -229,7 +230,7 @@ Common calls:
           <tr>
             <td>WorkloadAttestor</td>
             <td>Maps local process or container properties to selectors.</td>
-            <td><code>unix</code>, <code>k8s</code>, <code>docker</code></td>
+            <td><code>unix</code>, <code>systemd</code>, <code>docker</code></td>
           </tr>
           <tr>
             <td>UpstreamAuthority</td>

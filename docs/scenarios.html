@@ -42,7 +42,7 @@
 
       <div class="callout callout-info">
         <div class="callout-title">Overview</div>
-        <p>This repository contains 7 progressive scenarios. Each builds on concepts from previous ones. Scenarios use Podman containers and stay self-contained so you can tear one down and move to the next without carrying state forward.</p>
+        <p>This repository contains 7 progressive scenarios. Each builds on concepts from previous ones. Scenarios use Podman containers and stay self-contained so you can tear one down and move to the next without carrying state forward. While scenarios use Linux containers for portability, the SPIFFE and SPIRE concepts they teach apply directly to production deployments on Windows VMs, physical servers, and other traditional infrastructure.</p>
       </div>
 
       <h2>Prerequisites</h2>
@@ -61,6 +61,11 @@
         <li><code>down</code> tears the scenario down cleanly.</li>
         <li>Only run one scenario at a time because host ports and container names overlap.</li>
       </ul>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Containers vs production</div>
+        <p>These scenarios run SPIRE in Linux containers for easy setup and teardown. In production, SPIRE agents typically run as system services on Windows or Linux machines, and the SPIRE server runs centralized in a datacenter or cloud. The core concepts -- trust domains, attestation, SVIDs, workload registration -- remain the same regardless of deployment method.</p>
+      </div>
 
       <h2>Concept Progression Map</h2>
       <div class="ascii-diagram">
@@ -166,7 +171,7 @@
       <div class="scenario-card">
         <div class="scenario-number">04</div>
         <h3>Scenario 04 - Certificate-Based Attestation (TPM)</h3>
-        <p>Replace join-token bootstrap with stronger certificate-based node identity ideas. This scenario introduces x509pop flow and the TPM DevID mindset used on more hardware-rooted systems.</p>
+        <p>Replace join-token bootstrap with stronger certificate-based node identity ideas. This scenario introduces x509pop flow and the TPM DevID mindset used on more hardware-rooted systems, especially for VM and physical machine environments where cloud-provider metadata is not available.</p>
         <h4>Concepts Taught</h4>
         <div class="concepts">
           <span>x509pop attestation</span>
@@ -282,6 +287,8 @@
         <li><a href="https://spiffe.io/docs/latest/deploying/configuring/#configuring-federation">Federation (cross-trust-domain)</a></li>
         <li><a href="https://spiffe.io/docs/latest/deploying/svids/">JWT SVIDs</a></li>
         <li><a href="https://spiffe.io/docs/latest/try/getting-started-k8s/">Kubernetes deployment with k8s_psat</a></li>
+        <li>Windows-native agent deployment as a Windows service: see the <a href="deployment.html">Deployment</a> page for guidance on installing SPIRE agents on Windows machines.</li>
+        <li>Agent resilience and connectivity management for remote sites: see <a href="networking.html">Networking &amp; Security</a> and <a href="production.html">Production Guide</a>.</li>
         <li><a href="https://spiffe.io/docs/latest/deploying/spire_server/#high-availability">High Availability with multiple servers</a></li>
         <li><a href="https://spiffe.io/docs/latest/architecture/nested/">Nested SPIRE</a></li>
       </ul>

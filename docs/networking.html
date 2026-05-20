@@ -38,12 +38,13 @@
       </div>
 
       <h1>Networking, Ports, and Security Considerations</h1>
-      <p>SPIRE uses a small set of network paths. Most sensitive interfaces are local Unix domain sockets, while the server-to-agent control plane uses mutually authenticated gRPC.</p>
+      <p>SPIRE uses a small set of network paths. In hub-and-spoke deployments, agents on remote VMs and physical machines need only one outbound port to reach the centralized SPIRE Server. Most sensitive interfaces are local Unix domain sockets, while the server-to-agent control plane uses mutually authenticated gRPC.</p>
 
       <h2>Network Architecture</h2>
       <ul>
-        <li><strong>Server-to-Agent:</strong> gRPC over mTLS on port <code>8081</code>. This is the control channel for node attestation, bundle delivery, and certificate rotation.</li>
+        <li><strong>Server-to-Agent:</strong> gRPC over mTLS on port <code>8081</code>. In production, this often traverses WAN, VPN tunnels, or restricted network segments between remote agent machines and the centralized SPIRE Server.</li>
         <li><strong>Agent-to-Workload:</strong> Unix Domain Socket access to the Workload API. No TCP port is required because workloads talk to the local agent through local IPC.</li>
+        <li><strong>Agent-to-Server reconnection:</strong> agents automatically retry connections and synchronize state when connectivity is restored. Workloads continue using cached SVIDs during outages.</li>
         <li><strong>Dashboard-to-Server:</strong> Unix Domain Socket access through a shared volume mounted at the SPIRE Server API socket path.</li>
         <li><strong>External access:</strong> the demo dashboard is exposed on port <code>8080</code> in most scenarios so you can inspect SPIRE state from a browser.</li>
       </ul>
@@ -142,13 +143,34 @@
         <li><strong>Workload API:</strong> no firewall ports are needed because it is a Unix socket, not a TCP listener.</li>
       </ul>
 
+      <h2>Hub-and-Spoke Networking</h2>
+      <p>A common production topology keeps the centralized SPIRE Server in a datacenter or cloud environment while agents run on distributed VMs and physical machines across remote sites.</p>
+      <ul>
+        <li><strong>Outbound only from agents:</strong> agents need only outbound TCP access to <code>server:8081</code>, so no inbound ports are required on agent machines.</li>
+        <li><strong>Restricted network compatibility:</strong> the control channel works through NAT, corporate proxies with HTTP CONNECT support, and VPN tunnels.</li>
+        <li><strong>Minimal firewall surface:</strong> in very restrictive environments, only port <code>8081</code> needs to be allowed outbound from agent hosts.</li>
+        <li><strong>Load balancers:</strong> SPIRE v1.15.0 supports PROXY protocol for deployments behind compatible load balancers.</li>
+      </ul>
+
+      <h2>Handling Unstable Connectivity</h2>
+      <ul>
+        <li><strong>Automatic retry:</strong> agents reconnect automatically with exponential backoff when the server path is interrupted.</li>
+        <li><strong>Cached identities:</strong> during server disconnection, the agent continues serving cached SVIDs to local workloads.</li>
+        <li><strong><code>availability_target</code>:</strong> set it based on expected downtime windows, with a minimum of <code>24h</code>, so the agent pre-rotates SVIDs before disconnects.</li>
+        <li><strong><code>sync_interval</code>:</strong> this experimental setting controls how often the agent synchronizes with the server.</li>
+        <li><strong>Best practice:</strong> size <code>availability_target</code> for your worst-case server outage window, not just normal operations.</li>
+        <li><strong>Persistent cache:</strong> SVID cache survives agent restarts when the disk <code>KeyManager</code> is used.</li>
+      </ul>
+
       <h2>Security Considerations</h2>
       <ul>
         <li><strong>TLS:</strong> all server-agent communication uses mTLS, so both sides authenticate each other.</li>
         <li><strong>Bootstrap trust:</strong> agents need an initial trust bundle or bootstrap mode before they can validate the server. <code>insecure_bootstrap = true</code> is for development only.</li>
         <li><strong>Workload API access control:</strong> protect the socket with file permissions, workload attestors, and careful PID or namespace boundaries.</li>
+        <li><strong>Windows Workload API:</strong> on Windows machines, SPIRE Agent uses named pipes instead of Unix domain sockets. Protect named pipe access with Windows ACLs.</li>
         <li><strong>Rate limiting:</strong> SPIRE rate-limits sensitive operations such as node attestation and signing to reduce abuse and accidental overload.</li>
         <li><strong>PROXY protocol support:</strong> SPIRE v1.15.0 can preserve client IP information behind supported load balancers.</li>
+        <li><strong>Central server protection:</strong> in hub-and-spoke deployments, the centralized server is the highest-value target. Place it in a well-protected network segment with access logging and monitoring.</li>
         <li><strong>Post-quantum TLS:</strong> the <code>require_pq_kem</code> option can require hybrid key exchange such as <code>X25519MLKEM768</code> where supported.</li>
       </ul>
 
@@ -163,6 +185,7 @@
       </div>
 
       <h2>Per-Scenario Network Overview</h2>
+      <p>These scenarios demonstrate SPIRE networking in containers. In production VM deployments, the same port relationships apply but communication typically crosses WAN or VPN boundaries rather than a container network.</p>
       <table>
         <thead>
           <tr>

@@ -38,7 +38,7 @@
       </div>
 
       <h1>Production Deployment Best Practices</h1>
-      <p>Moving from demo or lab to production needs deliberate choices around security, reliability, and observability. This page shows what changes between the demo scenarios in this repository and a real production deployment.</p>
+      <p>Moving from demo or lab to production on VMs and physical machines needs deliberate choices around security, reliability, connectivity resilience, and observability. This page shows what changes between the demo scenarios and a real hub-and-spoke deployment with agents on restricted machines connecting to a centralized SPIRE server.</p>
 
       <h2>Demo vs Production</h2>
       <table>
@@ -68,12 +68,22 @@
           <tr>
             <td>Node Attestation</td>
             <td><code>join_token</code>, <code>x509pop</code></td>
-            <td>Platform-native (<code>aws_iid</code>, <code>k8s_psat</code>, <code>tpm_devid</code>)</td>
+            <td>Machine-bound identity with <code>x509pop</code> or <code>tpm_devid</code>; cloud attestors where applicable</td>
           </tr>
           <tr>
             <td>High Availability</td>
             <td>Single server</td>
             <td>Multiple servers plus shared DB</td>
+          </tr>
+          <tr>
+            <td>Connectivity</td>
+            <td>Stable container network</td>
+            <td>WAN/VPN with potential drops; <code>availability_target</code> configured</td>
+          </tr>
+          <tr>
+            <td>Agent Platform</td>
+            <td>Linux containers</td>
+            <td>Windows VMs, Linux VMs, physical servers</td>
           </tr>
           <tr>
             <td>Monitoring</td>
@@ -161,9 +171,9 @@ openssl req -x509 -new -key spire-root-ca.key -sha256 -days 3650 -out spire-root
 
       <h2>Node Attestation Best Practices</h2>
       <ul>
-        <li>Prefer platform-native attestation such as <code>aws_iid</code>, <code>gcp_iit</code>, or <code>k8s_psat</code> where possible.</li>
-        <li>Join tokens are acceptable for some controlled bootstrap flows, but they should be single-use and tightly managed.</li>
-        <li>For bare-metal or edge systems, evaluate <code>x509pop</code>, <code>sshpop</code>, or <code>tpm_devid</code>.</li>
+        <li>For VM and physical machine environments, use <code>x509pop</code> (certificate-based) or <code>tpm_devid</code> (TPM hardware) for durable machine-bound identity. These work without cloud-provider metadata.</li>
+        <li>Join tokens work well for initial bootstrapping of new machines but are single-use.</li>
+        <li>For agents running in cloud VMs, platform-native attestors like <code>aws_iid</code> or <code>gcp_iit</code> are also available, and <code>k8s_psat</code> fits Kubernetes-specific deployments.</li>
         <li>Security note: the <code>aws_iid</code> PKCS7 path had a critical CVE fixed in v1.14.6, so keep attestation plugins current.</li>
       </ul>
 
@@ -171,7 +181,7 @@ openssl req -x509 -new -key spire-root-ca.key -sha256 -days 3650 -out spire-root
       <ul>
         <li>Run multiple SPIRE servers behind stable addressing with shared PostgreSQL or MySQL.</li>
         <li>Use nested SPIRE when you need geographic distribution or delegated operational control.</li>
-        <li>Set agent <code>availability_target</code> to at least 24h so workloads can tolerate temporary server downtime without immediate identity disruption.</li>
+        <li>For agents on remote machines with non-stable connectivity, set <code>availability_target</code> to at least <code>24h</code>. This ensures the agent pre-rotates SVIDs to cover server outage windows. Combined with <code>disk</code> KeyManager on the agent, SVIDs and keys survive both agent restarts and server connectivity losses.</li>
       </ul>
 
       <h2>SVID TTL Tuning</h2>
@@ -180,6 +190,27 @@ openssl req -x509 -new -key spire-root-ca.key -sha256 -days 3650 -out spire-root
         <li>JWT SVID default is <code>5m</code>. Keep JWT TTLs short because there is no revocation channel.</li>
         <li>CA TTL default is <code>24h</code>. It should stay significantly longer than your SVID TTLs.</li>
         <li><code>ca_key_type = ec-p256</code> is the default and a good balance for most deployments.</li>
+      </ul>
+
+      <h2>Agent Resilience for Remote Machines</h2>
+      <p>Agents on VMs and physical machines in remote sites may lose connectivity to the centralized SPIRE server. Plan for local survival instead of assuming stable links.</p>
+      <ul>
+        <li><code>availability_target = "48h"</code> tells the agent to pre-rotate SVIDs so workloads can survive a 48-hour server outage window.</li>
+        <li><code>KeyManager "disk"</code> keeps keys available across agent restarts.</li>
+        <li>Place <code>data_dir</code> on persistent storage so agent state survives machine reboots.</li>
+        <li>Agent reconnection is automatic with exponential backoff.</li>
+        <li>Workloads continue using cached SVIDs during server outages.</li>
+        <li>Best practice: monitor agent-to-server connectivity and SVID expiry as key operational metrics.</li>
+      </ul>
+
+      <h2>Windows Agent Operations</h2>
+      <ul>
+        <li>Install SPIRE agent as a Windows service.</li>
+        <li>Use <code>named_pipe_name</code> for the Workload API instead of a Unix socket.</li>
+        <li>Put the agent data directory on persistent local disk such as <code>C:\spire\data</code>.</li>
+        <li>Configure <code>log_format = "json"</code> and forward logs with your standard aggregation tool.</li>
+        <li><code>x509pop</code> works well with machine certificates issued by Active Directory Certificate Services or another enterprise PKI.</li>
+        <li>Windows workload attestation can identify workloads by process SID or service identity.</li>
       </ul>
 
       <h2>Monitoring and Observability</h2>
@@ -196,9 +227,11 @@ openssl req -x509 -new -key spire-root-ca.key -sha256 -days 3650 -out spire-root
       <ul>
         <li><code>[ ]</code> No <code>insecure_bootstrap</code></li>
         <li><code>[ ]</code> No <code>memory</code> KeyManager</li>
+        <li><code>[ ]</code> <code>availability_target</code> configured for remote agents</li>
+        <li><code>[ ]</code> Agent <code>KeyManager "disk"</code> (not memory) for SVID persistence across restarts</li>
         <li><code>[ ]</code> No SQLite in production</li>
         <li><code>[ ]</code> Proper trust bundle distribution</li>
-        <li><code>[ ]</code> Platform-native node attestation</li>
+        <li><code>[ ]</code> Node attestation chosen for machine type (<code>x509pop</code>, <code>tpm_devid</code>, or cloud attestor)</li>
         <li><code>[ ]</code> UpstreamAuthority configured</li>
         <li><code>[ ]</code> Rate limiting enabled (default)</li>
         <li><code>[ ]</code> Server API socket not exposed to network</li>
