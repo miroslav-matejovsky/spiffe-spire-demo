@@ -1,12 +1,16 @@
 // Command scenario-07-production demonstrates a production-like SPIRE deployment
-// with multiple agents, attestation methods, workloads, and full observability.
+// with mixed node attestation, multiple workload pools, and full observability.
 //
-// This scenario combines everything from previous scenarios:
-//   - Agent-1: join_token attestation (simple bootstrap)
-//   - Agent-2: x509pop attestation (certificate-based, like TPM)
-//   - Multiple workloads registered across agents
-//   - Prometheus + Graphite for metrics collection
-//   - Dashboard for SPIRE API monitoring
+// This capstone scenario now uses the RunStep teaching flow. Each step explains
+// why the action matters before it runs, then tells the learner what changed and
+// what to verify after success. That makes the scenario map better to real ops.
+//
+// Core ideas shown here:
+//   - Agent-1: join_token attestation for simple bootstrap hosts
+//   - Agent-2: x509pop attestation for stronger device-backed hosts
+//   - Multiple workloads registered under different parent IDs
+//   - Prometheus + Graphite telemetry from first SPIRE startup events
+//   - Dashboard visibility across agents, entries, and trust bundle
 //
 // Usage:
 //

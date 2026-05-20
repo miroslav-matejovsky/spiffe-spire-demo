@@ -1,6 +1,7 @@
 // Command scenario-02-dashboard extends scenario 01 by adding a web dashboard
-// that connects to the SPIRE server API. It demonstrates how external tools can
-// query SPIRE for agent and entry information.
+// that connects to the SPIRE server API over a shared Unix socket volume. It
+// demonstrates how external tools can read SPIRE state with gRPC and present it
+// as HTML without changing server state.
 //
 // Usage:
 //

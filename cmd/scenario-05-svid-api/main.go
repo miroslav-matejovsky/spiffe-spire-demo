@@ -7,6 +7,7 @@ import (
 	"github.com/miroslav-matejovsky/spiffe-spire-demo/internal/podman"
 	"github.com/miroslav-matejovsky/spiffe-spire-demo/internal/scenario"
 	"github.com/miroslav-matejovsky/spiffe-spire-demo/internal/spirectl"
+	"github.com/miroslav-matejovsky/spiffe-spire-demo/internal/step"
 )
 
 func main() {
@@ -19,15 +20,14 @@ func main() {
 }
 
 func up(ctx *scenario.Context) error {
-	err := ctx.Runner.Run(
-		"Building Container Images",
-		"This scenario has three custom containers to build:\n"+
-			"  - Dashboard: web UI for SPIRE server monitoring\n"+
-			"  - svid-server: Go HTTPS server using SPIFFE mTLS\n"+
-			"  - svid-client: Go HTTPS client using SPIFFE mTLS\n\n"+
-			"Both Go services use the go-spiffe library to connect to the Workload API\n"+
-			"and automatically fetch/rotate their X.509 SVIDs.",
-		func() error {
+	err := ctx.Runner.RunStep(step.Step{
+		Name: "Building Container Images",
+		Explain: "Three images get built for one full mTLS lab.\n" +
+			"Dashboard gives SPIRE state and registration views.\n" +
+			"svid-server is Go HTTPS service using workloadapi.NewX509Source for server certs.\n" +
+			"svid-client is Go HTTP client using same API for client certs.\n" +
+			"Neither service reads PEM files from disk. go-spiffe/v2 fetches and rotates SVIDs at runtime.",
+		Action: func() error {
 			dashboardCf := filepath.Join(ctx.RepoRoot, "dashboard", "Containerfile")
 			serverCf := filepath.Join(ctx.ScenarioDir, "server", "Containerfile")
 			clientCf := filepath.Join(ctx.ScenarioDir, "client", "Containerfile")
@@ -40,39 +40,55 @@ func up(ctx *scenario.Context) error {
 			}
 			return podman.Build("spiffe-spire-demo-svid-client:local", clientCf, ctx.RepoRoot, ctx.Log)
 		},
-	)
+		Observe: "Three images now sit in local container cache.\n" +
+			"Go services are wired to go-spiffe/v2, so cert material comes from SPIRE, not image files.\n" +
+			"Check Containerfiles if curious: app code ships, but no static server.crt or client.key.\n" +
+			"Next steps bring up SPIRE so those images can ask for live SVIDs.",
+	})
 	if err != nil {
 		return err
 	}
 
-	err = ctx.Runner.Run(
-		"Starting SPIRE Server",
-		"Starting the trust domain authority for mirmat.org.",
-		func() error {
+	err = ctx.Runner.RunStep(step.Step{
+		Name: "Starting SPIRE Server",
+		Explain: "SPIRE server is trust authority for trust domain mirmat.org.\n" +
+			"It stores registration entries that bind workloads to SPIFFE IDs.\n" +
+			"Later it will issue X.509 SVIDs for svid-server and svid-client.\n" +
+			"Agent and dashboard both depend on this control plane.",
+		Action: func() error {
 			return ctx.Compose.Up("spire-server")
 		},
-	)
+		Observe: "SPIRE server container is up.\n" +
+			"Server API can now accept agent join, workload entry creation, and bundle reads.\n" +
+			"Next step waits until health check says CA and datastore are ready.",
+	})
 	if err != nil {
 		return err
 	}
 
-	err = ctx.Runner.Run(
-		"Waiting for SPIRE Server Health",
-		"Polling until the server API is ready.",
-		func() error {
+	err = ctx.Runner.RunStep(step.Step{
+		Name: "Waiting for SPIRE Server Health",
+		Explain: "Start command only starts process.\n" +
+			"Health check waits until server API really answers.\n" +
+			"No agent or workload should depend on server before this point.",
+		Action: func() error {
 			return spirectl.Healthcheck(ctx.Compose, "spire-server", ctx.Log)
 		},
-	)
+		Observe: "SPIRE server is healthy now.\n" +
+			"CA is ready to sign SVIDs and publish trust bundle data.\n" +
+			"Safe point for agent startup and workload registration.",
+	})
 	if err != nil {
 		return err
 	}
 
-	err = ctx.Runner.Run(
-		"Starting SPIRE Agent",
-		"Generate a join token and start the agent. The agent shares a Unix socket\n"+
-			"volume with the svid-server and svid-client containers. This socket is\n"+
-			"the Workload API endpoint where services fetch their SVIDs.",
-		func() error {
+	err = ctx.Runner.RunStep(step.Step{
+		Name: "Starting SPIRE Agent",
+		Explain: "SPIRE agent is node-side bridge between workloads and SPIRE server.\n" +
+			"Compose shares workload-socket volume among spire-agent, svid-server, and svid-client.\n" +
+			"Both Go apps call unix:///opt/spire/sockets/workload_api.sock through workloadapi.NewX509Source.\n" +
+			"Agent uses join token once, then serves SVID and bundle updates locally.",
+		Action: func() error {
 			token, err := spirectl.GenerateToken(ctx.Compose, "spire-server", "spiffe://mirmat.org/myagent", ctx.Log)
 			if err != nil {
 				return err
@@ -81,32 +97,41 @@ func up(ctx *scenario.Context) error {
 			defer podman.UnsetEnv("SPIRE_AGENT_JOIN_TOKEN")
 			return ctx.Compose.Up("spire-agent")
 		},
-	)
+		Observe: "Agent container started with fresh join token.\n" +
+			"After attestation, Workload API socket at /opt/spire/sockets/workload_api.sock will be live.\n" +
+			"Both Go services mount same socket path through workload-socket volume.\n" +
+			"Apps never talk to SPIRE server direct. Apps talk to local agent.",
+	})
 	if err != nil {
 		return err
 	}
 
-	err = ctx.Runner.Run(
-		"Waiting for Agent Attestation",
-		"Agent attests using its join token.",
-		func() error {
+	err = ctx.Runner.RunStep(step.Step{
+		Name: "Waiting for Agent Attestation",
+		Explain: "Join token proves agent is allowed into trust domain.\n" +
+			"Server records agent identity after attestation succeeds.\n" +
+			"Only then can agent answer Workload API calls for local processes.",
+		Action: func() error {
 			_, err := spirectl.WaitForAgent(ctx.Compose, "spire-server", "join_token", ctx.Log)
 			return err
 		},
-	)
+		Observe: "Agent attested with SPIRE server.\n" +
+			"Node now has authenticated channel for SVID and bundle updates.\n" +
+			"Workload API is ready to serve both Go services.",
+	})
 	if err != nil {
 		return err
 	}
 
-	err = ctx.Runner.Run(
-		"Registering Workloads",
-		"Workload registration maps a process selector to a SPIFFE ID:\n\n"+
-			"  svid-server (UID 10001) -> spiffe://mirmat.org/svid-server\n"+
-			"  svid-client (UID 10002) -> spiffe://mirmat.org/svid-client\n\n"+
-			"The SPIRE agent watches processes on its node. When a process with UID\n"+
-			"10001 connects to the Workload API, it receives the svid-server identity.\n"+
-			"This is how SPIFFE delivers identity without application changes.",
-		func() error {
+	err = ctx.Runner.RunStep(step.Step{
+		Name: "Registering Workloads",
+		Explain: "Registration binds Unix process identity to SPIFFE identity.\n" +
+			"SPIRE unix workload attestor checks UID of process opening Workload API socket.\n" +
+			"svid-server runs as UID 10001, so unix:uid:10001 maps to spiffe://mirmat.org/svid-server.\n" +
+			"svid-client runs as UID 10002, so unix:uid:10002 maps to spiffe://mirmat.org/svid-client.\n" +
+			"Different UIDs mean different SVIDs and clean authorization boundary.\n" +
+			"Same socket and same agent still yield per-process identity.",
+		Action: func() error {
 			agentID, err := spirectl.GetAgentID(ctx.Compose, "spire-server", ctx.Log)
 			if err != nil {
 				return err
@@ -118,42 +143,58 @@ func up(ctx *scenario.Context) error {
 			return spirectl.CreateEntry(ctx.Compose, "spire-server",
 				"spiffe://mirmat.org/svid-client", agentID, "unix:uid:10002", ctx.Log)
 		},
-	)
+		Observe: "Two workload entries now exist on SPIRE server.\n" +
+			"When svid-server with UID 10001 calls Workload API, agent returns spiffe://mirmat.org/svid-server.\n" +
+			"When svid-client with UID 10002 calls Workload API, agent returns spiffe://mirmat.org/svid-client.\n" +
+			"Each service now has its own cryptographic identity for mTLS and authorization.",
+	})
 	if err != nil {
 		return err
 	}
 
-	err = ctx.Runner.Run(
-		"Starting mTLS Services",
-		"Starting svid-server and svid-client. Both connect to the Workload API\n"+
-			"socket, fetch their SVIDs, and establish mTLS communication:\n\n"+
-			"  1. svid-server listens on :8443 with its SVID as the server cert\n"+
-			"  2. svid-client calls the server, presenting its own SVID\n"+
-			"  3. Both verify the peer's identity against the trust bundle\n\n"+
-			"The client makes 5 requests and logs the responses.",
-		func() error {
+	err = ctx.Runner.RunStep(step.Step{
+		Name: "Starting mTLS Services",
+		Explain: "1) svid-server calls workloadapi.NewX509Source() and gets rotating SVID data.\n" +
+			"2) It builds tls.Config with tlsconfig.MTLSServerConfig() and tlsconfig.AuthorizeMemberOf().\n" +
+			"3) It listens on :8443 without reading PEM files from disk.\n" +
+			"4) svid-client creates its own X509Source and tlsconfig.MTLSClientConfig().\n" +
+			"5) On connect, both sides present X.509 SVIDs and verify peer against trust bundle.\n" +
+			"6) Server reads client SPIFFE ID from peer cert URI SAN after handshake.\n" +
+			"7) X509Source watches updates, so certificate rotation can happen without app restart.",
+		Action: func() error {
 			if err := ctx.Compose.UpNoBuild("svid-server"); err != nil {
 				return err
 			}
 			time.Sleep(3 * time.Second)
 			return ctx.Compose.UpNoBuild("svid-client")
 		},
-	)
+		Observe: "Both services are starting now.\n" +
+			"Watch svid-server logs for server SPIFFE ID and client SPIFFE ID seen after each handshake.\n" +
+			"Watch svid-client logs for HTTPS responses proving both identities were accepted.\n" +
+			"Try: podman-compose logs -f svid-server\n" +
+			"Try: podman-compose logs -f svid-client",
+	})
 	if err != nil {
 		return err
 	}
 
-	err = ctx.Runner.Run(
-		"Starting Dashboard",
-		"Starting the dashboard for monitoring.",
-		func() error {
+	err = ctx.Runner.RunStep(step.Step{
+		Name: "Starting Dashboard",
+		Explain: "Dashboard is read-only window into SPIRE server state.\n" +
+			"Use it to inspect entries, agents, and health while mTLS traffic runs.\n" +
+			"It helps link control-plane objects to live app behavior.",
+		Action: func() error {
 			if err := ctx.Compose.UpNoBuild("dashboard"); err != nil {
 				return err
 			}
 			ctx.WaitForDashboard("http://127.0.0.1:8080/health")
 			return nil
 		},
-	)
+		Observe: "Dashboard is live at http://localhost:8080.\n" +
+			"Check Entries page for svid-server and svid-client workload registrations.\n" +
+			"Check Agents page for attested agent that serves both workloads.\n" +
+			"Keep logs open beside dashboard to connect control plane with mTLS traffic.",
+	})
 	if err != nil {
 		return err
 	}

@@ -3,10 +3,11 @@
 // communicate over mTLS, with identities provided by the SPIRE Workload API.
 //
 // This scenario shows:
-//   - How workloads connect to the Workload API to get SVIDs
-//   - How mTLS is established using SPIFFE identities
+//   - How workloads use go-spiffe X509Source to fetch and rotate SVIDs
+//   - How tlsconfig builds mTLS client and server config from Workload API data
 //   - How workload registration maps processes to SPIFFE IDs (via UID selectors)
-//   - How the trust bundle enables mutual verification
+//   - How the trust bundle enables mutual verification and SPIFFE-based auth
+//   - How RunStep turns startup into a guided, inspectable learning flow
 //
 // Usage:
 //

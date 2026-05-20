@@ -1,11 +1,12 @@
-// Command scenario-06-metrics demonstrates SPIRE's telemetry integration
-// with Prometheus and Graphite. It uses x509pop attestation and adds
-// observability collectors to the stack.
+// Command scenario-06-metrics demonstrates SPIRE telemetry with
+// Prometheus, StatsD, and Graphite. It uses x509pop attestation and adds
+// observability collectors to stack.
 //
 // This scenario shows:
-//   - How SPIRE emits metrics (StatsD format to Graphite)
-//   - How Prometheus scrapes SPIRE server metrics
-//   - How to monitor SPIRE health and performance in production
+//   - How telemetry {} blocks enable pull and push metrics paths in SPIRE
+//   - How Prometheus scrapes SPIRE server and agent at path "/"
+//   - How StatsD pushes counters and gauges into Graphite for browsing
+//   - How to compare SPIRE API state in dashboard with telemetry views
 //
 // Usage:
 //

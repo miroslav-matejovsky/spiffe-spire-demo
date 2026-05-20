@@ -1,12 +1,14 @@
-// Command scenario-03-workload demonstrates workload identity - the core
-// value proposition of SPIFFE. It shows how a workload (any running process)
-// can receive an X.509 SVID via the Workload API.
+// Command scenario-03-workload demonstrates workload identity - core SPIFFE
+// value for applications. It walks through how registration policy, Workload
+// API socket sharing, PID namespace sharing for unix attestation, and short-
+// lived SVID rotation fit together to give running workloads an identity.
 //
-// Subcommands:
+// Each phase uses RunStep so learner sees explanation before action and
+// observation after action. Scenario starts stack, then leaves two key manual
+// follow-ups:
 //
-//	(default)  Start the full scenario stack
-//	register   Register a workload entry with the SPIRE server
-//	fetch      Display the SVID fetched by the workload container
+//	register   Create workload registration entry on SPIRE server
+//	fetch      Read workload logs and inspect streamed X.509-SVID data
 //
 // Usage:
 //
