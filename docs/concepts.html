@@ -49,10 +49,12 @@
       <p>SPIFFE ID is workload identity string. It uses URI format <code>spiffe://trust-domain/path</code>. Trust domain names identity provider boundary. Path carries workload-specific meaning and is usually organized to match teams, namespaces, services, or environments.</p>
       <pre><code>spiffe://example.org/web-server
 spiffe://prod.acme.com/ns/default/sa/api
-spiffe://mirmat.org/svid-client</code></pre>
+spiffe://mirmat.org/svid-client
+spiffe://corp.example/datacenter-east/payment-service
+spiffe://corp.example/remote-site/win-server-01/inventory-app</code></pre>
       <ul>
         <li>Trust domain is like DNS domain in shape, but it does not need DNS resolution.</li>
-        <li>Path is hierarchical and conventionally represents org structure or workload location.</li>
+        <li>Path is hierarchical and conventionally represents organizational structure, physical site, machine role, or application identity.</li>
         <li>Maximum trust domain length is 255 characters.</li>
       </ul>
       <div class="callout callout-tip">
@@ -171,16 +173,22 @@ spire-server entry create \
         </thead>
         <tbody>
           <tr>
-            <td><code>join_token</code></td>
-            <td>Labs, demos, initial bootstrap</td>
-            <td>One-time pre-shared token issued by server</td>
-            <td>Basic</td>
-          </tr>
-          <tr>
             <td><code>x509pop</code></td>
             <td>VMs or hosts with existing PKI</td>
             <td>Proof of possession for existing X.509 certificate</td>
             <td>Strong</td>
+          </tr>
+          <tr>
+            <td><code>tpm_devid</code></td>
+            <td>Hardware-backed hosts</td>
+            <td>TPM DevID certificate anchored in hardware</td>
+            <td>Very strong</td>
+          </tr>
+          <tr>
+            <td><code>join_token</code></td>
+            <td>Labs, demos, initial bootstrap</td>
+            <td>One-time pre-shared token issued by server</td>
+            <td>Basic</td>
           </tr>
           <tr>
             <td><code>aws_iid</code></td>
@@ -194,21 +202,19 @@ spire-server entry create \
             <td>Projected service account token bound to cluster issuer</td>
             <td>Strong</td>
           </tr>
-          <tr>
-            <td><code>tpm_devid</code></td>
-            <td>Hardware-backed hosts</td>
-            <td>TPM DevID certificate anchored in hardware</td>
-            <td>Very strong</td>
-          </tr>
         </tbody>
       </table>
+      <div class="callout callout-tip">
+        <div class="callout-title">VM and physical machine hint</div>
+        <p>For VM and physical machine environments, <code>x509pop</code> (certificate-based) and <code>tpm_devid</code> (TPM hardware) are the strongest choices. They work without cloud-provider metadata and bind agent identity to durable machine credentials.</p>
+      </div>
       <div class="callout callout-tip">
         <div class="callout-title">Repo trail</div>
         <p><code>join_token</code> is easiest starting point and appears in Scenario 01. <code>x509pop</code> appears in Scenario 04.</p>
       </div>
 
       <h2>Workload Attestation</h2>
-      <p>Workload attestation is how local process proves what it is so agent can choose matching registration entry.</p>
+      <p>Workload attestation is how local process proves what it is so agent can choose matching registration entry. In traditional VM and physical machine deployments, the most important inputs are local process identity and service metadata rather than cluster metadata.</p>
       <table>
         <thead>
           <tr>
@@ -221,24 +227,29 @@ spire-server entry create \
           <tr>
             <td><code>unix</code></td>
             <td><code>uid</code>, <code>gid</code>, process path, sometimes supplementary process details</td>
-            <td>Linux hosts and containers sharing Unix socket</td>
+            <td>Primary choice for Linux services and workloads on VMs or physical machines</td>
           </tr>
           <tr>
-            <td><code>k8s</code></td>
-            <td>namespace, service account, pod labels, pod UID</td>
-            <td>Kubernetes-native identity policy</td>
+            <td><code>systemd</code></td>
+            <td>service name, unit metadata, and related host service attributes</td>
+            <td>Primary choice for long-running Linux services managed by systemd</td>
           </tr>
           <tr>
             <td><code>docker</code></td>
             <td>container labels, image, container ID</td>
             <td>Container-focused selector matching outside Kubernetes</td>
           </tr>
+          <tr>
+            <td><code>k8s</code></td>
+            <td>namespace, service account, pod labels, pod UID</td>
+            <td>Optional choice for Kubernetes-native identity policy</td>
+          </tr>
         </tbody>
       </table>
-      <p>Repo uses <code>unix</code> workload attestation in Scenario 03 and Scenario 05. Agent checks calling PID and UID on local socket before returning identity.</p>
+      <p>Repo uses <code>unix</code> workload attestation in Scenario 03 and Scenario 05. Agent checks calling PID, UID, and process path on local socket before returning identity. For Windows services, agents can match workloads by process properties so long-running machine-based services still map cleanly to registration entries.</p>
 
       <h2>Certificate Rotation</h2>
-      <p>SPIRE automates credential lifecycle. Agents monitor SVID expiry and renew before half-life, then push updates through Workload API streams so applications do not need manual reload logic.</p>
+      <p>SPIRE automates credential lifecycle. Agents monitor SVID expiry and renew before half-life, then push updates through Workload API streams so applications do not need manual reload logic. Rotation resilience also matters in conservative infrastructure: agent-managed local caches let workloads continue using valid SVIDs during temporary server disconnection, and agent renews them when connectivity is restored.</p>
       <div class="learning-path">
         <div class="learning-step">
           <div class="step-marker">1</div>
@@ -246,7 +257,7 @@ spire-server entry create \
         </div>
         <div class="learning-step">
           <div class="step-marker">2</div>
-          <div class="step-content"><h4>Renew before half-life</h4><p>Before halfway point, agent asks server for fresh credentials.</p></div>
+          <div class="step-content"><h4>Renew before half-life</h4><p>Before halfway point, agent asks server for fresh credentials. If link to central server is temporarily down, cached SVIDs remain available locally until connectivity returns.</p></div>
         </div>
         <div class="learning-step">
           <div class="step-marker">3</div>
@@ -265,7 +276,7 @@ if err != nil {
 defer source.Close()</code></pre>
       <div class="callout callout-info">
         <div class="callout-title">Scenario 05</div>
-        <p>Scenario 05 shows rotation-friendly integration through go-spiffe SDK. Application code fetches from source. Agent handles refresh cycle.</p>
+        <p>Scenario 05 shows rotation-friendly integration through go-spiffe SDK. Application code fetches from source. Agent handles refresh cycle. This resilience is critical for environments with non-stable network links.</p>
       </div>
 
       <div class="page-nav">

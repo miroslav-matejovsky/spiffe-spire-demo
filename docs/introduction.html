@@ -38,7 +38,7 @@
       </div>
 
       <h1>Introduction to SPIFFE and SPIRE</h1>
-      <p>SPIFFE and SPIRE give modern platforms a standard way to issue, deliver, and rotate workload identity. Instead of trusting networks, hostnames, or long-lived secrets, they let services prove who they are with cryptographic identity tied to runtime facts.</p>
+      <p>SPIFFE and SPIRE give traditional and hybrid environments a standard way to issue, deliver, and rotate workload identity. Instead of trusting networks, hostnames, or long-lived secrets, they let services on VMs, physical servers, and Windows machines prove who they are with cryptographic identity tied to runtime facts.</p>
 
       <div class="callout callout-info">
         <div class="callout-title">Why it matters</div>
@@ -46,11 +46,11 @@
       </div>
 
       <section>
-        <h2>The Problem: Identity in Modern Infrastructure</h2>
-        <p>Traditional infrastructure often treated network location as identity. If traffic came from a trusted IP range, subnet, or firewall segment, it was assumed to belong there. That model breaks down in modern environments built on containers, orchestrators, autoscaling groups, and cloud platforms.</p>
-        <p>Services now move constantly. Containers restart on new nodes. Pods are rescheduled. Virtual machines are replaced. Horizontal scaling creates and removes instances continuously. IP addresses change as part of normal operations, not rare maintenance events.</p>
-        <p>When identity depends on network coordinates, operators end up chasing moving targets. Firewall rules multiply. Static allowlists drift out of date. Shared credentials spread across services because they are easier to manage than precise trust. Over time, network-based trust becomes both hard to maintain and too broad to be safe.</p>
-        <p>Modern systems need identity tied to workload properties instead of placement. A payment service should be recognized as a payment service no matter which node, pod, or address it uses at a given moment.</p>
+        <h2>The Problem: Identity in Traditional and Hybrid Infrastructure</h2>
+        <p>Many organizations run hundreds of Windows servers and Linux VMs across datacenters, remote sites, and a few cloud segments. Those environments often depend on VPN tunnels, firewall rules, and network location to decide which service should be trusted.</p>
+        <p>Certificate and credential handling becomes manual toil. Teams track renewal deadlines, copy certificates or API keys across machines, and scramble when an expired credential causes an outage. Agents may run on machines with limited admin access, so installing or rotating credentials is slow and inconsistent.</p>
+        <p>As services grow, VPN paths and firewall exceptions multiply. WAN links between remote sites and the central datacenter are not always stable, and IP-based trust breaks when VMs migrate, hosts are rebuilt, or addresses change during maintenance. Shared credentials spread because they seem easier than keeping exact trust rules current.</p>
+        <p>These systems still need identity tied to workload properties instead of placement. A payment service should be recognized as a payment service whether it runs on a Windows VM in a branch office, a Linux server in a datacenter, or a rebuilt machine with a new IP address.</p>
       </section>
 
       <section>
@@ -111,26 +111,26 @@
 
       <section>
         <h2>How SPIRE Works (High Level)</h2>
-        <p>At high level, SPIRE Server acts as identity authority. It validates agents running on trusted nodes, stores registration data, and signs workload identities. A SPIRE Agent runs on each node and serves as local broker between workloads and the server.</p>
-        <p>When a workload starts, the agent evaluates its selectors and registration entries. If workload matches a registered identity, agent exposes SVIDs and trust bundles through the Workload API. Applications then use those materials for mTLS, request authentication, and authorization decisions without handling static secrets directly.</p>
+        <p>At high level, SPIRE Server acts as identity authority. It is usually centralized in a cloud region or datacenter with stable network access, while a SPIRE Agent runs on each VM or physical machine and serves as local broker between workloads and the server.</p>
+        <p>That creates a hub-and-spoke pattern. When a workload starts, the local agent evaluates its selectors and registration entries. If the workload matches a registered identity, the agent exposes SVIDs and trust bundles through the Workload API so applications can keep using local identity material even when connectivity back to the server is intermittent.</p>
         <p>For deeper component relationships and request flow, continue to <a href="architecture.html">Architecture</a>.</p>
       </section>
 
       <div class="callout callout-tip">
         <div class="callout-title">Key mindset shift</div>
-        <p>With SPIFFE, identity is discovered and verified from runtime evidence. Teams stop baking permanent credentials into deployments and start treating identity as a managed service.</p>
+        <p>With SPIFFE, identity is discovered and verified from runtime evidence on each VM or physical machine. Teams stop baking permanent credentials into server builds and start treating identity as a managed service.</p>
       </div>
 
       <section>
         <h2>SPIFFE Ecosystem</h2>
-        <p>SPIFFE is a CNCF graduated project with a growing ecosystem across cloud-native security, service mesh, and application platforms. SPIRE is the best-known implementation because it tracks the specification closely and provides a mature operational model.</p>
-        <p>Other tools also build on SPIFFE concepts. Service mesh projects and platform components can use SPIFFE IDs as stable workload identifiers. For example, Istio's identity model uses SPIFFE-formatted identities. Application developers can integrate directly with SPIFFE using libraries such as the Go <code>go-spiffe</code> SDK.</p>
-        <p>That combination of standard identity format, reusable APIs, and multiple integrations is what makes SPIFFE useful beyond one product or one orchestrator.</p>
+        <p>SPIFFE is a CNCF graduated project with a practical ecosystem around workload identity, certificate automation, and platform security. SPIRE is the best-known implementation because it tracks the specification closely and provides a mature operational model for centralized servers and distributed agents.</p>
+        <p>Application developers can integrate directly with SPIFFE using libraries such as the Go <code>go-spiffe</code> SDK for services running on VMs. SPIFFE IDs work across platform boundaries, including Windows services, Linux daemons, and containerized applications.</p>
+        <p>SPIFFE also fits alongside existing PKI and certificate management tooling. That mix of standard identity format, reusable APIs, and integration with established operational systems is what makes SPIFFE useful beyond one runtime or deployment style.</p>
       </section>
 
       <section>
         <h2>Hands-on in This Repository</h2>
-        <p>This repository contains seven progressive scenarios that move from simple SPIRE startup to workload identity, dashboard usage, TPM-backed nodes, mTLS, metrics, and more production-oriented layouts. Each scenario is self-contained so you can study one pattern at a time and then build on it.</p>
+        <p>This repository contains seven progressive scenarios that move from simple SPIRE startup to workload identity, dashboard usage, TPM-backed nodes, mTLS, metrics, and more production-oriented layouts. The scenarios run in Linux containers for convenience, but the identity, networking, and operational patterns apply directly to deployments on VMs and physical machines.</p>
         <p>When you are ready to connect concepts with runnable examples, go to <a href="scenarios.html">Hands-on Scenarios</a>.</p>
       </section>
 

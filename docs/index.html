@@ -35,22 +35,22 @@
     <div class="content">
       <section>
         <h1>SPIFFE/SPIRE Documentation</h1>
-        <p>Comprehensive guide for deploying and operating SPIFFE/SPIRE for zero-trust workload identity across modern infrastructure, from first concepts to production-ready operations.</p>
+        <p>Comprehensive guide for deploying and operating SPIFFE/SPIRE for zero-trust workload identity across traditional and hybrid infrastructure, with agents on Windows and Linux VMs or physical machines connecting back to a centralized SPIRE server.</p>
       </section>
 
       <div class="callout callout-info">
         <div class="callout-title">Guide Focus</div>
-        <p>Use this documentation as both a learning path and an operator reference. It maps core SPIFFE ideas to practical SPIRE deployment patterns and hands-on scenarios in this repository.</p>
+        <p>Use this documentation as both a learning path and an operator reference. It maps core SPIFFE ideas to a hub-and-spoke SPIRE deployment model where one agent runs on each machine with limited access and connects back to a centralized server.</p>
       </div>
 
       <section>
         <h2>What you'll learn</h2>
         <ul>
-          <li>How SPIFFE provides a workload identity framework for zero-trust systems</li>
-          <li>How SPIRE components fit together in real deployment architecture</li>
-          <li>How to deploy SPIRE server and agents in development and production-style environments</li>
-          <li>How to configure attestation, registration, trust bundles, and workload identity delivery</li>
-          <li>How to evaluate production readiness, operational safeguards, and scaling concerns</li>
+          <li>How SPIFFE provides workload identity for services running on VMs and physical machines</li>
+          <li>How SPIRE fits into a hub-and-spoke deployment with a centralized server and distributed agents</li>
+          <li>How to deploy SPIRE agents on restricted Windows and Linux machines</li>
+          <li>How to configure attestation, registration, trust bundles, and workload identity delivery when connectivity is limited</li>
+          <li>How to evaluate production readiness, conservative infrastructure hardening, and scaling concerns</li>
         </ul>
       </section>
 
@@ -115,7 +115,7 @@
             <div class="step-marker">4</div>
             <div class="step-content">
               <h4><a href="production.html">Production Guide</a></h4>
-              <p>Translate local patterns into secure runtime practices for real services.</p>
+              <p>Translate local patterns into secure runtime practices for services running on VMs and physical machines.</p>
             </div>
           </div>
         </div>
@@ -133,7 +133,7 @@
             <div class="step-marker">2</div>
             <div class="step-content">
               <h4><a href="networking.html">Networking &amp; Security</a></h4>
-              <p>Plan ports, trust boundaries, socket exposure, and node communication.</p>
+              <p>Plan ports, trust boundaries, socket exposure, and hub-and-spoke communication across restricted networks.</p>
             </div>
           </div>
           <div class="learning-step">
@@ -180,12 +180,12 @@
           </div>
           <div class="card">
             <h3>Deployment</h3>
-            <p>Plan installation, startup flow, and environment layout for SPIRE components.</p>
+            <p>Plan Windows agent installation, VM startup flow, and environment layout for centralized SPIRE components.</p>
             <a href="deployment.html">Open page</a>
           </div>
           <div class="card">
             <h3>Networking &amp; Security</h3>
-            <p>Review sockets, API surfaces, trust boundaries, and secure communication patterns.</p>
+            <p>Review sockets, firewall boundaries, restricted-network access, and hub-and-spoke communication patterns.</p>
             <a href="networking.html">Open page</a>
           </div>
           <div class="card">
@@ -200,7 +200,7 @@
           </div>
           <div class="card">
             <h3>Production Guide</h3>
-            <p>Move from demo patterns to resilient operational practices and hardening steps.</p>
+            <p>Move from demo patterns to resilient operations and hardening for conservative VM and physical machine environments.</p>
             <a href="production.html">Open page</a>
           </div>
         </div>
@@ -208,7 +208,7 @@
 
       <section>
         <h2>About this guide</h2>
-        <p>This guide maps directly to the seven hands-on scenarios in this repository, giving you a path from basic SPIRE startup through workload identity, mTLS, telemetry, and more production-oriented layouts.</p>
+        <p>This guide maps directly to the seven hands-on scenarios in this repository. Those scenarios use Linux containers for learning convenience, but the guide targets real deployments with centralized SPIRE servers and agents running on Windows or Linux VMs and physical machines.</p>
         <p>Content and navigation assume SPIRE v1.15.0 so the examples and terminology stay aligned with current upstream documentation and runtime behavior.</p>
       </section>
 

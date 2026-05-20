@@ -38,7 +38,7 @@
       </div>
 
       <h1>Configuration and Management of SPIRE</h1>
-      <p>SPIRE behavior is controlled by <code>server.conf</code> and <code>agent.conf</code>. The scenarios in this repository keep configurations intentionally small so you can see how trust domain, sockets, plugins, telemetry, and attestation settings fit together.</p>
+      <p>SPIRE behavior is controlled by <code>server.conf</code> and <code>agent.conf</code>. The scenarios in this repository keep configurations intentionally small so you can see how trust domain, sockets, plugins, telemetry, and attestation settings fit together. In production, agents on Windows VMs and remote machines need careful configuration for intermittent connectivity and local resilience.</p>
 
       <h2>Configuration Format</h2>
       <p>SPIRE configuration files use HCL (HashiCorp Configuration Language) or JSON. In practice, most examples and nearly all files in this repository use HCL. The main files are <code>server.conf</code> for the SPIRE Server and <code>agent.conf</code> for each SPIRE Agent.</p>
@@ -314,6 +314,16 @@ UpstreamAuthority "spire" {
         </tbody>
       </table>
 
+      <div class="callout callout-info">
+        <div class="callout-title">Windows Workload API</div>
+        <p>On Windows, use <code>named_pipe_name</code> (e.g., <code>\\spire-agent\\public\\api</code>) instead of <code>socket_path</code>. The agent exposes the Workload API through a Windows named pipe rather than a Unix domain socket.</p>
+      </div>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Availability target for remote agents</div>
+        <p>For agents with non-stable connectivity to the central server, set <code>availability_target</code> to at least <code>24h</code>. This tells the agent to pre-rotate SVIDs aggressively so workloads survive extended server outages. Critical for remote sites and machines on WAN/VPN links.</p>
+      </div>
+
       <p>Official reference: <a href="https://spiffe.io/docs/latest/deploying/spire_agent/">SPIRE Agent configuration</a></p>
 
       <h3>Example <code>agent.conf</code> from this repository</h3>
@@ -374,6 +384,7 @@ NodeAttestor "x509pop" {
 }</code></pre>
 
       <h3>WorkloadAttestor</h3>
+      <p>Choose workload attestors based on how services run on each machine. Use <code>systemd</code> for Linux services managed as systemd units, keep <code>unix</code> for traditional local processes, and use platform-specific process identity on Windows.</p>
       <pre><code>WorkloadAttestor "unix" {
     plugin_data {
         discover_workload_path = true
@@ -391,6 +402,7 @@ WorkloadAttestor "docker" {
         docker_socket_path = "/var/run/docker.sock"
     }
 }</code></pre>
+      <p>For traditional services on VMs, the <code>unix</code> attestor matching by UID, GID, or binary path is the most common choice. On Windows, process-based attestation matches by SID or service identity.</p>
 
       <h3>KeyManager</h3>
       <pre><code>KeyManager "memory" {
@@ -503,6 +515,8 @@ spire-server token generate -spiffeID spiffe://mirmat.org/spire/agent/join_token
           </tr>
         </tbody>
       </table>
+
+      <p><strong>Note:</strong> These examples use container-based deployments. For VM and physical machine agents, the same configuration options apply but paths and socket types differ, such as Windows named pipes instead of Unix sockets.</p>
 
       <div class="page-nav">
         <a href="networking.html" class="prev">
