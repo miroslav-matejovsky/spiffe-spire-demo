@@ -99,7 +99,7 @@ func up(ctx *scenario.Context) error {
 			return ctx.Compose.Up("graphite-statsd", "prometheus")
 		},
 		Observe: "Metrics collectors running.\n" +
-			"Graphite is at http://localhost:8080 and Prometheus is at http://localhost:9090.\n" +
+			"Graphite is at http://localhost:3000 and Prometheus is at http://localhost:9090.\n" +
 			"Both are ready to receive SPIRE telemetry from first startup events.\n" +
 			"Later you can compare what each backend captured.",
 	})
@@ -291,10 +291,10 @@ func up(ctx *scenario.Context) error {
 			if err := ctx.Compose.UpNoBuild("dashboard"); err != nil {
 				return err
 			}
-			ctx.WaitForDashboard("http://127.0.0.1:8090/health")
+			ctx.WaitForDashboard("http://127.0.0.1:8080/health")
 			return nil
 		},
-		Observe: "Dashboard at http://localhost:8090.\n" +
+		Observe: "Dashboard at http://localhost:8080.\n" +
 			"Key things to explore: Agents page shows two agents with different types.\n" +
 			"Entries page shows two workloads with different parent IDs.\n" +
 			"Trust Bundle page shows shared trust domain used by whole deployment.",
@@ -308,9 +308,9 @@ func up(ctx *scenario.Context) error {
 
 func done(ctx *scenario.Context) {
 	ctx.Log.Step("Production scenario is ready!")
-	ctx.Log.Info("Dashboard:    http://localhost:8090")
+	ctx.Log.Info("Dashboard:    http://localhost:8080")
 	ctx.Log.Info("Prometheus:   http://localhost:9090")
-	ctx.Log.Info("Graphite:     http://localhost:8080")
+	ctx.Log.Info("Graphite:     http://localhost:3000")
 	ctx.Log.Info("")
 	ctx.Log.Info("This production-like setup demonstrates:")
 	ctx.Log.Info("  - Multiple attestation methods (join_token + x509pop)")

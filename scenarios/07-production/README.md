@@ -18,7 +18,7 @@ The goal is not to reproduce every production detail, but to show how the concep
 
 ```mermaid
 flowchart LR
-    Browser[Browser] --> Dashboard[SPIRE Dashboard\n:8090]
+    Browser[Browser] --> Dashboard[SPIRE Dashboard\n:8080]
     Dashboard --> ServerSocket[/SPIRE Server API socket/]
     ServerSocket --> Server[SPIRE Server\njoin_token + x509pop\nPrometheus + StatsD]
 
@@ -31,7 +31,7 @@ flowchart LR
     Prom[Prometheus\n:9090] --> Server
     Prom --> Agent1
     Prom --> Agent2
-    Statsd[Graphite/StatsD\n:8080 / :8125] --> Server
+    Statsd[Graphite/StatsD\n:3000 / :8125] --> Server
     Statsd --> Agent1
     Statsd --> Agent2
 ```
@@ -89,9 +89,9 @@ The startup script does the following:
 
 Once startup completes, open these endpoints:
 
-- **Dashboard**: http://localhost:8090
+- **Dashboard**: http://localhost:8080
 - **Prometheus**: http://localhost:9090
-- **Graphite**: http://localhost:8080
+- **Graphite**: http://localhost:3000
 
 ## What to Observe
 

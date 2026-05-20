@@ -7,6 +7,8 @@ services:
     hostname: spire-server
     volumes:
       - ./spire/server:/opt/spire/conf/server
+      - ./logs/spire-server:/opt/spire/logs
+      - spire-server-data:/opt/spire/data/server
       - spire-server-socket:/tmp/spire-server/private
     command: ["-config", "/opt/spire/conf/server/server.conf"]
   spire-agent:
@@ -16,6 +18,7 @@ services:
     depends_on: ["spire-server"]
     volumes:
       - ./spire/agent:/opt/spire/conf/agent
+      - ./logs/spire-agent:/opt/spire/logs
       - shared-socket:/opt/spire/sockets
     command: ["-config", "/opt/spire/conf/agent/agent.conf"]
   dashboard:
@@ -42,4 +45,5 @@ services:
 
 volumes:
   shared-socket:
+  spire-server-data:
   spire-server-socket:

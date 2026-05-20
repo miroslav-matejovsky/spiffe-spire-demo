@@ -8,6 +8,8 @@ services:
     volumes:
       - ./spire/server:/opt/spire/conf/server
       - spire-server-socket:/tmp/spire-server/private
+      - spire-server-data:/opt/spire/data/server
+      - ./logs/spire-server:/opt/spire/logs
     command: ["-config", "/opt/spire/conf/server/server.conf"]
 
   spire-agent:
@@ -18,6 +20,7 @@ services:
     volumes:
       - ./spire/agent:/opt/spire/conf/agent
       - /var/run/:/var/run/
+      - ./logs/spire-agent:/opt/spire/logs
     command: ["-config", "/opt/spire/conf/agent/agent.conf"]
 
   dashboard:
@@ -35,3 +38,4 @@ services:
 
 volumes:
   spire-server-socket:
+  spire-server-data:

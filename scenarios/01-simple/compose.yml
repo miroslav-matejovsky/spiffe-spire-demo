@@ -7,6 +7,8 @@ services:
     hostname: spire-server
     volumes:
       - ./spire/server:/opt/spire/conf/server
+      - ./logs/spire-server:/opt/spire/logs
+      - spire-server-data:/opt/spire/data/server
     command: ["-config", "/opt/spire/conf/server/server.conf"]
 
   spire-agent:
@@ -16,4 +18,8 @@ services:
     depends_on: ["spire-server"]
     volumes:
       - ./spire/agent:/opt/spire/conf/agent
+      - ./logs/spire-agent:/opt/spire/logs
     command: ["-config", "/opt/spire/conf/agent/agent.conf"]
+
+volumes:
+  spire-server-data:

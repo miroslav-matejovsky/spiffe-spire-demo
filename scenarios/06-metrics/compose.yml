@@ -6,6 +6,8 @@ services:
     image: graphiteapp/graphite-statsd:1.1.10-5
     hostname: graphite-statsd
     restart: always
+    volumes:
+      - ./logs/graphite:/opt/graphite/storage/log
     ports:
       - "8080:80"
       - "8125:8125/udp"
@@ -25,6 +27,8 @@ services:
     volumes:
       - ./spire/server:/opt/spire/conf/server
       - spire-server-socket:/tmp/spire-server/private
+      - spire-server-data:/opt/spire/data/server
+      - ./logs/spire-server:/opt/spire/logs
     command: ["-config", "/opt/spire/conf/server/server.conf"]
   spire-agent:
     container_name: metrics-spire-agent
@@ -34,6 +38,7 @@ services:
     volumes:
       - ./spire/agent:/opt/spire/conf/agent
       - /var/run/:/var/run/
+      - ./logs/spire-agent:/opt/spire/logs
     command: ["-config", "/opt/spire/conf/agent/agent.conf"]
   dashboard:
     container_name: metrics-dashboard
@@ -50,3 +55,4 @@ services:
 
 volumes:
   spire-server-socket:
+  spire-server-data:

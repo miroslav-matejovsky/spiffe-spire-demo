@@ -8,6 +8,8 @@ services:
     volumes:
       - ./spire/server:/opt/spire/conf/server
       - spire-server-socket:/tmp/spire-server/private
+      - spire-server-data:/opt/spire/data/server
+      - ./logs/spire-server:/opt/spire/logs
     command: ["-config", "/opt/spire/conf/server/server.conf"]
 
   spire-agent:
@@ -18,6 +20,7 @@ services:
     volumes:
       - ./spire/agent:/opt/spire/conf/agent
       - workload-socket:/opt/spire/sockets
+      - ./logs/spire-agent:/opt/spire/logs
     command: ["-config", "/opt/spire/conf/agent/agent.conf", "-joinToken", "${SPIRE_AGENT_JOIN_TOKEN}"]
 
   svid-server:
@@ -62,3 +65,4 @@ services:
 volumes:
   workload-socket:
   spire-server-socket:
+  spire-server-data:

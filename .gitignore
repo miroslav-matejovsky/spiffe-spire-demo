@@ -14,6 +14,9 @@ pipeline-query
 # agent stuff
 .task/
 
+# Scenario logs (created at runtime, bind-mounted from containers)
+scenarios/*/logs/
+
 # Scenario 04 - generated DevID credentials (created at runtime by scenario binary)
 scenarios/04-tpm/spire/server/devid-ca.pem
 scenarios/04-tpm/spire/agent/devid-cert.pem
