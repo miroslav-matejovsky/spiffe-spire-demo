@@ -13,8 +13,17 @@ pipeline-query
 
 # agent stuff
 .task/
+.antigravitycli
 
-# Scenario 06 - generated agent credentials (created at runtime by provision-agent.ps1)
+# Scenario logs (created at runtime, bind-mounted from containers)
+scenarios/*/logs/
+
+# Scenario 04 - generated DevID credentials (created at runtime by scenario binary)
+scenarios/04-tpm/spire/server/devid-ca.pem
+scenarios/04-tpm/spire/agent/devid-cert.pem
+scenarios/04-tpm/spire/agent/devid-key.pem
+
+# Scenario 06 - generated agent credentials (created at runtime by scenario binary)
 scenarios/06-metrics/spire/agent/agent.key.pem
 scenarios/06-metrics/spire/agent/agent.crt.pem
 scenarios/06-metrics/spire/server/agent-cacert.pem

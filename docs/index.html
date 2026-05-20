@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home - SPIFFE/SPIRE Guide</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>SPIFFE/SPIRE Guide</h2>
+      <div class="version">SPIRE v1.15.0</div>
+    </div>
+    <nav>
+      <div class="nav-section">Getting Started</div>
+      <a href="index.html" class="active">Home</a>
+      <a href="introduction.html">Introduction</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="concepts.html">Core Concepts</a>
+      <div class="nav-section">Operations</div>
+      <a href="deployment.html">Deployment</a>
+      <a href="networking.html">Networking &amp; Security</a>
+      <a href="configuration.html">Configuration</a>
+      <div class="nav-section">Practice</div>
+      <a href="scenarios.html">Hands-on Scenarios</a>
+      <a href="production.html">Production Guide</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="https://spiffe.io/docs/latest/">Official SPIFFE Docs &#8599;</a>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <section>
+        <h1>SPIFFE/SPIRE Documentation</h1>
+        <p>Comprehensive guide for deploying and operating SPIFFE/SPIRE for zero-trust workload identity across modern infrastructure, from first concepts to production-ready operations.</p>
+      </section>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Guide Focus</div>
+        <p>Use this documentation as both a learning path and an operator reference. It maps core SPIFFE ideas to practical SPIRE deployment patterns and hands-on scenarios in this repository.</p>
+      </div>
+
+      <section>
+        <h2>What you'll learn</h2>
+        <ul>
+          <li>How SPIFFE provides a workload identity framework for zero-trust systems</li>
+          <li>How SPIRE components fit together in real deployment architecture</li>
+          <li>How to deploy SPIRE server and agents in development and production-style environments</li>
+          <li>How to configure attestation, registration, trust bundles, and workload identity delivery</li>
+          <li>How to evaluate production readiness, operational safeguards, and scaling concerns</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Learning Paths</h2>
+        <h3>New to SPIFFE</h3>
+        <div class="learning-path">
+          <div class="learning-step">
+            <div class="step-marker">1</div>
+            <div class="step-content">
+              <h4><a href="introduction.html">Introduction</a></h4>
+              <p>Start with identity problems, core terminology, and why SPIFFE exists.</p>
+            </div>
+          </div>
+          <div class="learning-step">
+            <div class="step-marker">2</div>
+            <div class="step-content">
+              <h4><a href="concepts.html">Concepts</a></h4>
+              <p>Learn SVIDs, trust domains, attestation, and workload identity lifecycle.</p>
+            </div>
+          </div>
+          <div class="learning-step">
+            <div class="step-marker">3</div>
+            <div class="step-content">
+              <h4><a href="scenarios.html">Scenario 01</a></h4>
+              <p>See a minimal setup before adding more moving parts.</p>
+            </div>
+          </div>
+          <div class="learning-step">
+            <div class="step-marker">4</div>
+            <div class="step-content">
+              <h4><a href="scenarios.html">Scenario 03</a></h4>
+              <p>Move into workload identity flow and practical agent-to-workload interaction.</p>
+            </div>
+          </div>
+        </div>
+
+        <h3>Application Developer</h3>
+        <div class="learning-path">
+          <div class="learning-step">
+            <div class="step-marker">1</div>
+            <div class="step-content">
+              <h4><a href="concepts.html">Concepts</a></h4>
+              <p>Understand identities, bundles, and rotation before writing code.</p>
+            </div>
+          </div>
+          <div class="learning-step">
+            <div class="step-marker">2</div>
+            <div class="step-content">
+              <h4><a href="architecture.html">Architecture</a></h4>
+              <p>Learn how workloads talk to SPIRE agents and consume identity material.</p>
+            </div>
+          </div>
+          <div class="learning-step">
+            <div class="step-marker">3</div>
+            <div class="step-content">
+              <h4><a href="scenarios.html">Scenario 05 (mTLS)</a></h4>
+              <p>Follow a concrete Go-based mTLS example built on the SPIFFE Workload API.</p>
+            </div>
+          </div>
+          <div class="learning-step">
+            <div class="step-marker">4</div>
+            <div class="step-content">
+              <h4><a href="production.html">Production Guide</a></h4>
+              <p>Translate local patterns into secure runtime practices for real services.</p>
+            </div>
+          </div>
+        </div>
+
+        <h3>Platform/IT Ops</h3>
+        <div class="learning-path">
+          <div class="learning-step">
+            <div class="step-marker">1</div>
+            <div class="step-content">
+              <h4><a href="deployment.html">Deployment</a></h4>
+              <p>Review server and agent placement, bootstrap flow, and environment setup.</p>
+            </div>
+          </div>
+          <div class="learning-step">
+            <div class="step-marker">2</div>
+            <div class="step-content">
+              <h4><a href="networking.html">Networking &amp; Security</a></h4>
+              <p>Plan ports, trust boundaries, socket exposure, and node communication.</p>
+            </div>
+          </div>
+          <div class="learning-step">
+            <div class="step-marker">3</div>
+            <div class="step-content">
+              <h4><a href="configuration.html">Configuration</a></h4>
+              <p>Learn how server, agent, and attestor settings shape runtime behavior.</p>
+            </div>
+          </div>
+          <div class="learning-step">
+            <div class="step-marker">4</div>
+            <div class="step-content">
+              <h4><a href="scenarios.html">Scenario 07</a></h4>
+              <p>Study a more production-oriented layout with extra services and observability.</p>
+            </div>
+          </div>
+          <div class="learning-step">
+            <div class="step-marker">5</div>
+            <div class="step-content">
+              <h4><a href="production.html">Production Guide</a></h4>
+              <p>Use final guidance to harden operations, lifecycle management, and trust handling.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Quick Links</h2>
+        <div class="card-grid">
+          <div class="card">
+            <h3>Introduction</h3>
+            <p>Why workload identity matters and how SPIFFE and SPIRE solve core problems.</p>
+            <a href="introduction.html">Open page</a>
+          </div>
+          <div class="card">
+            <h3>Architecture</h3>
+            <p>See server, agent, workload, and trust bundle relationships at system level.</p>
+            <a href="architecture.html">Open page</a>
+          </div>
+          <div class="card">
+            <h3>Core Concepts</h3>
+            <p>Understand SVIDs, trust domains, selectors, attestation, and identity rotation.</p>
+            <a href="concepts.html">Open page</a>
+          </div>
+          <div class="card">
+            <h3>Deployment</h3>
+            <p>Plan installation, startup flow, and environment layout for SPIRE components.</p>
+            <a href="deployment.html">Open page</a>
+          </div>
+          <div class="card">
+            <h3>Networking &amp; Security</h3>
+            <p>Review sockets, API surfaces, trust boundaries, and secure communication patterns.</p>
+            <a href="networking.html">Open page</a>
+          </div>
+          <div class="card">
+            <h3>Configuration</h3>
+            <p>Learn how to shape behavior with server, agent, and workload-facing settings.</p>
+            <a href="configuration.html">Open page</a>
+          </div>
+          <div class="card">
+            <h3>Hands-on Scenarios</h3>
+            <p>Navigate seven progressive repository scenarios that build practical SPIRE skills.</p>
+            <a href="scenarios.html">Open page</a>
+          </div>
+          <div class="card">
+            <h3>Production Guide</h3>
+            <p>Move from demo patterns to resilient operational practices and hardening steps.</p>
+            <a href="production.html">Open page</a>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>About this guide</h2>
+        <p>This guide maps directly to the seven hands-on scenarios in this repository, giving you a path from basic SPIRE startup through workload identity, mTLS, telemetry, and more production-oriented layouts.</p>
+        <p>Content and navigation assume SPIRE v1.15.0 so the examples and terminology stay aligned with current upstream documentation and runtime behavior.</p>
+      </section>
+
+      <div class="callout callout-tip">
+        <div class="callout-title">Best way to use guide</div>
+        <p>Read concept pages first, then run matching scenarios in order. That pattern helps connect identity theory with commands, configuration, and runtime behavior.</p>
+      </div>
+
+      <div class="page-nav">
+        <a href="introduction.html" class="next">
+          <span class="label">Next</span>
+          <span class="title">Introduction</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

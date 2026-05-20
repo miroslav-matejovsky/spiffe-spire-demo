@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Introduction - SPIFFE/SPIRE Guide</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>SPIFFE/SPIRE Guide</h2>
+      <div class="version">SPIRE v1.15.0</div>
+    </div>
+    <nav>
+      <div class="nav-section">Getting Started</div>
+      <a href="index.html">Home</a>
+      <a href="introduction.html" class="active">Introduction</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="concepts.html">Core Concepts</a>
+      <div class="nav-section">Operations</div>
+      <a href="deployment.html">Deployment</a>
+      <a href="networking.html">Networking &amp; Security</a>
+      <a href="configuration.html">Configuration</a>
+      <div class="nav-section">Practice</div>
+      <a href="scenarios.html">Hands-on Scenarios</a>
+      <a href="production.html">Production Guide</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="https://spiffe.io/docs/latest/">Official SPIFFE Docs &#8599;</a>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="breadcrumb">
+        <a href="index.html">Home</a><span class="sep">&gt;</span><span>Introduction</span>
+      </div>
+
+      <h1>Introduction to SPIFFE and SPIRE</h1>
+      <p>SPIFFE and SPIRE give modern platforms a standard way to issue, deliver, and rotate workload identity. Instead of trusting networks, hostnames, or long-lived secrets, they let services prove who they are with cryptographic identity tied to runtime facts.</p>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Why it matters</div>
+        <p>Zero-trust systems need every workload to authenticate explicitly. SPIFFE defines identity format and semantics. SPIRE provides the operational machinery that makes those identities real.</p>
+      </div>
+
+      <section>
+        <h2>The Problem: Identity in Modern Infrastructure</h2>
+        <p>Traditional infrastructure often treated network location as identity. If traffic came from a trusted IP range, subnet, or firewall segment, it was assumed to belong there. That model breaks down in modern environments built on containers, orchestrators, autoscaling groups, and cloud platforms.</p>
+        <p>Services now move constantly. Containers restart on new nodes. Pods are rescheduled. Virtual machines are replaced. Horizontal scaling creates and removes instances continuously. IP addresses change as part of normal operations, not rare maintenance events.</p>
+        <p>When identity depends on network coordinates, operators end up chasing moving targets. Firewall rules multiply. Static allowlists drift out of date. Shared credentials spread across services because they are easier to manage than precise trust. Over time, network-based trust becomes both hard to maintain and too broad to be safe.</p>
+        <p>Modern systems need identity tied to workload properties instead of placement. A payment service should be recognized as a payment service no matter which node, pod, or address it uses at a given moment.</p>
+      </section>
+
+      <section>
+        <h2>What is SPIFFE?</h2>
+        <p><a href="https://spiffe.io/docs/latest/spiffe-about/overview/">SPIFFE</a>, short for Secure Production Identity Framework for Everyone, is an open standard for workload identity and a CNCF graduated project. It defines a consistent way for services and workloads to identify themselves across platforms and trust boundaries.</p>
+        <p>At its core, SPIFFE says every workload should receive a cryptographic identity that software can verify and use for authorization decisions.</p>
+        <ul>
+          <li>Every workload gets a cryptographic identity called an SVID, or SPIFFE Verifiable Identity Document</li>
+          <li>Identity is expressed as a URI such as <code>spiffe://trust-domain/path</code></li>
+          <li>Identity is attested, not manually configured, based on workload properties such as selectors, node state, or platform metadata</li>
+          <li>Identity is short-lived and automatically rotated so long-lived secrets do not become operational defaults</li>
+        </ul>
+        <p>SPIFFE standardizes identity format, trust bundles, and API expectations so applications and platforms can integrate around shared identity rules instead of inventing their own.</p>
+      </section>
+
+      <section>
+        <h2>What is SPIRE?</h2>
+        <p><a href="https://spiffe.io/docs/latest/spire-about/">SPIRE</a>, or SPIFFE Runtime Environment, is the reference implementation of SPIFFE. Where SPIFFE defines standards, SPIRE runs the control plane and data plane pieces needed to issue and manage identities in practice.</p>
+        <p>SPIRE handles core operational responsibilities:</p>
+        <ul>
+          <li>Identity issuance and automatic rotation for workloads and nodes</li>
+          <li>Node attestation so a SPIRE Server can determine whether an agent belongs to a trusted node</li>
+          <li>Workload attestation so the right workloads receive the right SPIFFE IDs</li>
+          <li>Trust bundle management so workloads can validate peers from the same or federated trust domains</li>
+        </ul>
+        <p>In other words, SPIRE turns SPIFFE from specification into working infrastructure.</p>
+      </section>
+
+      <section>
+        <h2>SPIFFE vs Traditional Approaches</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Traditional approach</th>
+              <th>SPIFFE/SPIRE approach</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Secret distribution through copied keys, tokens, or shared passwords</td>
+              <td>Automatic workload identity delivered through attested runtime channels</td>
+            </tr>
+            <tr>
+              <td>Manual certificate management with slow renewal and high operational toil</td>
+              <td>Automatic certificate issuance and rotation through SPIRE</td>
+            </tr>
+            <tr>
+              <td>Network-level trust based on IP ranges, segments, or firewalls</td>
+              <td>Workload-level trust based on cryptographic identity</td>
+            </tr>
+            <tr>
+              <td>Static credentials with long lifetime and wide blast radius</td>
+              <td>Dynamic short-lived credentials with frequent rotation</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>How SPIRE Works (High Level)</h2>
+        <p>At high level, SPIRE Server acts as identity authority. It validates agents running on trusted nodes, stores registration data, and signs workload identities. A SPIRE Agent runs on each node and serves as local broker between workloads and the server.</p>
+        <p>When a workload starts, the agent evaluates its selectors and registration entries. If workload matches a registered identity, agent exposes SVIDs and trust bundles through the Workload API. Applications then use those materials for mTLS, request authentication, and authorization decisions without handling static secrets directly.</p>
+        <p>For deeper component relationships and request flow, continue to <a href="architecture.html">Architecture</a>.</p>
+      </section>
+
+      <div class="callout callout-tip">
+        <div class="callout-title">Key mindset shift</div>
+        <p>With SPIFFE, identity is discovered and verified from runtime evidence. Teams stop baking permanent credentials into deployments and start treating identity as a managed service.</p>
+      </div>
+
+      <section>
+        <h2>SPIFFE Ecosystem</h2>
+        <p>SPIFFE is a CNCF graduated project with a growing ecosystem across cloud-native security, service mesh, and application platforms. SPIRE is the best-known implementation because it tracks the specification closely and provides a mature operational model.</p>
+        <p>Other tools also build on SPIFFE concepts. Service mesh projects and platform components can use SPIFFE IDs as stable workload identifiers. For example, Istio's identity model uses SPIFFE-formatted identities. Application developers can integrate directly with SPIFFE using libraries such as the Go <code>go-spiffe</code> SDK.</p>
+        <p>That combination of standard identity format, reusable APIs, and multiple integrations is what makes SPIFFE useful beyond one product or one orchestrator.</p>
+      </section>
+
+      <section>
+        <h2>Hands-on in This Repository</h2>
+        <p>This repository contains seven progressive scenarios that move from simple SPIRE startup to workload identity, dashboard usage, TPM-backed nodes, mTLS, metrics, and more production-oriented layouts. Each scenario is self-contained so you can study one pattern at a time and then build on it.</p>
+        <p>When you are ready to connect concepts with runnable examples, go to <a href="scenarios.html">Hands-on Scenarios</a>.</p>
+      </section>
+
+      <div class="page-nav">
+        <a href="index.html">
+          <span class="label">Previous</span>
+          <span class="title">Home</span>
+        </a>
+        <a href="architecture.html" class="next">
+          <span class="label">Next</span>
+          <span class="title">Architecture</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

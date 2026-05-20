@@ -3,17 +3,23 @@ name: simple
 services:
   spire-server:
     container_name: simple-spire-server
-    image: ghcr.io/spiffe/spire-server:1.14.5
+    image: ghcr.io/spiffe/spire-server:1.15.0
     hostname: spire-server
     volumes:
       - ./spire/server:/opt/spire/conf/server
+      - ./logs/spire-server:/opt/spire/logs
+      - spire-server-data:/opt/spire/data/server
     command: ["-config", "/opt/spire/conf/server/server.conf"]
 
   spire-agent:
     container_name: simple-spire-agent
-    image: ghcr.io/spiffe/spire-agent:1.14.5
+    image: ghcr.io/spiffe/spire-agent:1.15.0
     hostname: spire-agent
     depends_on: ["spire-server"]
     volumes:
       - ./spire/agent:/opt/spire/conf/agent
+      - ./logs/spire-agent:/opt/spire/logs
     command: ["-config", "/opt/spire/conf/agent/agent.conf"]
+
+volumes:
+  spire-server-data:

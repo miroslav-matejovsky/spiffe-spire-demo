@@ -215,10 +215,10 @@ The script performs these steps for you:
 
 ## Useful Commands
 ```powershell
-podman-compose logs -f svid-server
-podman-compose logs -f svid-client
-podman-compose logs -f spire-agent
-podman-compose logs -f spire-server
+podman-compose -f scenarios/05-svid-api/compose.yml logs -f svid-server
+podman-compose -f scenarios/05-svid-api/compose.yml logs -f svid-client
+podman-compose -f scenarios/05-svid-api/compose.yml logs -f spire-agent
+podman-compose -f scenarios/05-svid-api/compose.yml logs -f spire-server
 ```
 
 ## Suggested Experiments
@@ -228,7 +228,7 @@ podman-compose logs -f spire-server
 4. Print more certificate details from the peer connection to reinforce how SPIFFE information is carried in X.509.
 
 ## Troubleshooting
-- **Client cannot connect to server** — check `podman-compose logs -f spire-agent` and confirm both workloads received SVIDs.
+- **Client cannot connect to server** — check `podman-compose -f scenarios/05-svid-api/compose.yml logs -f spire-agent` and confirm both workloads received SVIDs.
 - **No attested agent found** — wait a few more seconds after starting the agent, then rerun `register-workloads.ps1`.
 - **Wrong workload identity** — verify that the container UID in each Containerfile matches the selector in `register-workloads.ps1`.
 - **Build fails with missing modules** — run `go mod tidy` at the repository root to refresh `go.sum`.

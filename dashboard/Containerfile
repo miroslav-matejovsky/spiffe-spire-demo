@@ -4,11 +4,9 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -o /dashboard ./dashboard
+RUN CGO_ENABLED=0 go build -o /dashboard ./cmd/dashboard
 
-FROM alpine:3.21
+FROM alpine:3.23
 RUN apk add --no-cache ca-certificates
-RUN adduser -D -u 10000 dashboard
 COPY --from=builder /dashboard /usr/local/bin/dashboard
-USER dashboard
 ENTRYPOINT ["dashboard"]

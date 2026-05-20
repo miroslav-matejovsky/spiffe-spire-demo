@@ -128,7 +128,7 @@ The fetch output is already useful for learning because it shows the issued iden
 If you want PEM files for further inspection, you can run a fetch command with `-write`. The generated files live inside the workload container or shared volume, so copy them to a location with OpenSSL access before inspecting them on the host.
 
 ```powershell
-podman-compose exec workload /opt/spire/bin/spire-agent api fetch x509 `
+podman-compose -f scenarios/03-workload/compose.yml exec workload /opt/spire/bin/spire-agent api fetch x509 `
     -socketPath /opt/spire/sockets/workload_api.sock `
     -write /opt/spire/sockets/myworkload
 ```

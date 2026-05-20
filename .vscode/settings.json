@@ -64,10 +64,12 @@
     }
   ],
   "cSpell.words": [
+    "apitypes",
     "Containerfile",
     "devid",
     "drivername",
     "genproto",
+    "gopls",
     "graphiteapp",
     "healthcheck",
     "LASTEXITCODE",
@@ -75,6 +77,7 @@
     "mirmat",
     "miroslav",
     "spiffe",
+    "spirectl",
     "statsd",
     "svid",
     "swtpm",

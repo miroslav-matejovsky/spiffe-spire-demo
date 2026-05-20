@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Production Guide - SPIFFE/SPIRE Guide</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>SPIFFE/SPIRE Guide</h2>
+      <div class="version">SPIRE v1.15.0</div>
+    </div>
+    <nav>
+      <div class="nav-section">Getting Started</div>
+      <a href="index.html">Home</a>
+      <a href="introduction.html">Introduction</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="concepts.html">Core Concepts</a>
+      <div class="nav-section">Operations</div>
+      <a href="deployment.html">Deployment</a>
+      <a href="networking.html">Networking &amp; Security</a>
+      <a href="configuration.html">Configuration</a>
+      <div class="nav-section">Practice</div>
+      <a href="scenarios.html">Hands-on Scenarios</a>
+      <a href="production.html" class="active">Production Guide</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="https://spiffe.io/docs/latest/">Official SPIFFE Docs &#8599;</a>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="breadcrumb">
+        <a href="index.html">Home</a><span class="sep">&gt;</span><span>Production Guide</span>
+      </div>
+
+      <h1>Production Deployment Best Practices</h1>
+      <p>Moving from demo or lab to production needs deliberate choices around security, reliability, and observability. This page shows what changes between the demo scenarios in this repository and a real production deployment.</p>
+
+      <h2>Demo vs Production</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th>Demo (This Repo)</th>
+            <th>Production</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Database</td>
+            <td>SQLite</td>
+            <td>PostgreSQL or MySQL</td>
+          </tr>
+          <tr>
+            <td>Key Management</td>
+            <td>memory</td>
+            <td>disk, AWS KMS, Vault, Azure Key Vault</td>
+          </tr>
+          <tr>
+            <td>Bootstrap</td>
+            <td><code>insecure_bootstrap=true</code></td>
+            <td><code>trust_bundle_path</code> or <code>trust_bundle_url</code></td>
+          </tr>
+          <tr>
+            <td>Node Attestation</td>
+            <td><code>join_token</code>, <code>x509pop</code></td>
+            <td>Platform-native (<code>aws_iid</code>, <code>k8s_psat</code>, <code>tpm_devid</code>)</td>
+          </tr>
+          <tr>
+            <td>High Availability</td>
+            <td>Single server</td>
+            <td>Multiple servers plus shared DB</td>
+          </tr>
+          <tr>
+            <td>Monitoring</td>
+            <td>Optional (scenario 06)</td>
+            <td>Required (Prometheus plus alerting)</td>
+          </tr>
+          <tr>
+            <td>Log Format</td>
+            <td>text</td>
+            <td>json for log aggregation</td>
+          </tr>
+          <tr>
+            <td>SVID TTLs</td>
+            <td>Defaults</td>
+            <td>Tuned per environment</td>
+          </tr>
+          <tr>
+            <td>CA</td>
+            <td>Self-signed</td>
+            <td>UpstreamAuthority (Vault, AWS PCA, and similar)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Database</h2>
+      <div class="callout callout-danger">
+        <div class="callout-title">Do not use SQLite in production</div>
+        <p>SQLite is fine for demos and single-node labs. Production deployments need a networked SQL backend so multiple SPIRE servers can share state and survive host failures.</p>
+      </div>
+      <ul>
+        <li>PostgreSQL is the usual recommendation for production SPIRE deployments.</li>
+        <li>MySQL is also supported when it fits your environment better.</li>
+        <li>The database user needs permissions such as <code>INSERT</code> and <code>DROP</code> so SPIRE can manage its schema.</li>
+        <li>Regular backups are essential because the datastore contains registration, bundle, and node state.</li>
+      </ul>
+      <pre><code>plugins {
+  DataStore "sql" {
+    plugin_data {
+      database_type = "postgres"
+      connection_string = "host=postgres.example.net port=5432 dbname=spire user=spire password=change-me sslmode=verify-full"
+    }
+  }
+}</code></pre>
+
+      <h2>Key Management</h2>
+      <div class="callout callout-danger">
+        <div class="callout-title">Do not use in-memory KeyManager in production</div>
+        <p>The server signing key is extremely sensitive. If it is compromised, an attacker can forge workload and agent identities across your trust domain.</p>
+      </div>
+      <ul>
+        <li><code>disk</code>: minimum acceptable production baseline because keys survive restarts.</li>
+        <li><code>aws_kms</code>: HSM-backed option and strong default for AWS deployments.</li>
+        <li><code>azure_key_vault</code>: Azure Managed HSM integration is available in SPIRE v1.15.0.</li>
+        <li><code>vault</code>: HashiCorp Vault Key Manager is new in SPIRE v1.15.0 and fits centralized secrets operations.</li>
+      </ul>
+
+      <h2>Upstream Authority (CA Integration)</h2>
+      <p>A self-signed root is acceptable for isolated environments, but enterprise deployments usually connect SPIRE to an existing PKI. Use an <code>UpstreamAuthority</code> plugin when you need SPIRE server intermediates signed by a corporate or cloud CA.</p>
+      <p>Common options include <code>disk</code>, <code>aws_pca</code>, <code>vault</code>, <code>gcp_cas</code>, <code>spire</code> for nested SPIRE, and <code>cert-manager</code>.</p>
+      <pre><code>plugins {
+  UpstreamAuthority "vault" {
+    plugin_data {
+      vault_addr = "https://vault.example.org/"
+      pki_mount_point = "pki"
+      ca_cert_path = "/etc/spire/vault-ca.pem"
+      token_auth {
+        token = "&lt;vault-token&gt;"
+      }
+    }
+  }
+}</code></pre>
+
+      <h2>Secure Bootstrap</h2>
+      <div class="callout callout-danger">
+        <div class="callout-title">Never use insecure_bootstrap=true in production</div>
+        <p>Bootstrap trust must come from a secure channel. Otherwise, a man-in-the-middle can impersonate your SPIRE server and own the identity system from first contact.</p>
+      </div>
+      <ul>
+        <li>Distribute the trust bundle with secure file copy or configuration management.</li>
+        <li>Or use <code>trust_bundle_url</code> over valid HTTPS with a certificate chain your agents already trust.</li>
+        <li>Plan key generation and storage before the first production install.</li>
+      </ul>
+      <pre><code>openssl ecparam -name prime256v1 -genkey -noout -out spire-root-ca.key
+openssl req -x509 -new -key spire-root-ca.key -sha256 -days 3650 -out spire-root-ca.crt -subj "/CN=SPIRE Root CA"</code></pre>
+
+      <h2>Node Attestation Best Practices</h2>
+      <ul>
+        <li>Prefer platform-native attestation such as <code>aws_iid</code>, <code>gcp_iit</code>, or <code>k8s_psat</code> where possible.</li>
+        <li>Join tokens are acceptable for some controlled bootstrap flows, but they should be single-use and tightly managed.</li>
+        <li>For bare-metal or edge systems, evaluate <code>x509pop</code>, <code>sshpop</code>, or <code>tpm_devid</code>.</li>
+        <li>Security note: the <code>aws_iid</code> PKCS7 path had a critical CVE fixed in v1.14.6, so keep attestation plugins current.</li>
+      </ul>
+
+      <h2>High Availability</h2>
+      <ul>
+        <li>Run multiple SPIRE servers behind stable addressing with shared PostgreSQL or MySQL.</li>
+        <li>Use nested SPIRE when you need geographic distribution or delegated operational control.</li>
+        <li>Set agent <code>availability_target</code> to at least 24h so workloads can tolerate temporary server downtime without immediate identity disruption.</li>
+      </ul>
+
+      <h2>SVID TTL Tuning</h2>
+      <ul>
+        <li>X.509 SVID default is <code>1h</code>. Shorter TTLs improve security but increase signing load.</li>
+        <li>JWT SVID default is <code>5m</code>. Keep JWT TTLs short because there is no revocation channel.</li>
+        <li>CA TTL default is <code>24h</code>. It should stay significantly longer than your SVID TTLs.</li>
+        <li><code>ca_key_type = ec-p256</code> is the default and a good balance for most deployments.</li>
+      </ul>
+
+      <h2>Monitoring and Observability</h2>
+      <p>Use scenario 06 as lab practice, then make observability mandatory in production.</p>
+      <ul>
+        <li>Enable Prometheus metrics on both server and agent.</li>
+        <li>Expose health endpoints such as <code>/live</code> and <code>/ready</code>.</li>
+        <li>Enable <code>audit_log_enabled</code> when you need compliance and traceability.</li>
+        <li>Set <code>log_format = json</code> for centralized log aggregation.</li>
+        <li>Watch key signals such as SVID signing rate, attestation failures, and cache size.</li>
+      </ul>
+
+      <h2>Security Hardening Checklist</h2>
+      <ul>
+        <li><code>[ ]</code> No <code>insecure_bootstrap</code></li>
+        <li><code>[ ]</code> No <code>memory</code> KeyManager</li>
+        <li><code>[ ]</code> No SQLite in production</li>
+        <li><code>[ ]</code> Proper trust bundle distribution</li>
+        <li><code>[ ]</code> Platform-native node attestation</li>
+        <li><code>[ ]</code> UpstreamAuthority configured</li>
+        <li><code>[ ]</code> Rate limiting enabled (default)</li>
+        <li><code>[ ]</code> Server API socket not exposed to network</li>
+        <li><code>[ ]</code> Workload API socket permissions restricted</li>
+        <li><code>[ ]</code> Monitoring and alerting configured</li>
+        <li><code>[ ]</code> Log aggregation enabled (json format)</li>
+        <li><code>[ ]</code> Regular key rotation policy</li>
+        <li><code>[ ]</code> SVID TTLs reviewed and tuned</li>
+        <li><code>[ ]</code> Post-quantum TLS considered (<code>require_pq_kem</code>)</li>
+      </ul>
+
+      <h2>Federation</h2>
+      <p>Federation enables cross-trust-domain communication. You publish a bundle endpoint, exchange trust bundles, and let workloads from separate trust domains validate each other without sharing one trust root.</p>
+      <pre><code>server {
+  federation {
+    bundle_endpoint {
+      address = "0.0.0.0"
+      port = 8443
+      profile "https_web" {}
+    }
+
+    federates_with "partner.example" {
+      bundle_endpoint_url = "https://partner.example:8443"
+      bundle_endpoint_profile "https_web" {
+        endpoint_spiffe_id = "spiffe://partner.example/spire/server"
+      }
+    }
+  }
+}</code></pre>
+      <p>Read more in <a href="https://spiffe.io/docs/latest/deploying/configuring/">official federation and configuration docs</a>.</p>
+
+      <h2>Further Reading</h2>
+      <ul>
+        <li><a href="https://spiffe.io/docs/latest/deploying/">SPIRE deploying guide</a></li>
+        <li><a href="https://spiffe.io/docs/latest/deploying/configuring/">SPIRE configuring guide</a></li>
+        <li><a href="https://spiffe.io/docs/latest/deploying/spire_server/">SPIRE server reference</a></li>
+        <li><a href="https://spiffe.io/docs/latest/deploying/spire_agent/">SPIRE agent reference</a></li>
+        <li><a href="https://spiffe.io/docs/latest/deploying/spire_server/#telemetry-configuration">Telemetry configuration reference</a></li>
+        <li><a href="https://github.com/spiffe/spiffe">SPIFFE specifications</a></li>
+        <li><a href="https://github.com/spiffe/spire">SPIRE GitHub</a></li>
+        <li><a href="https://github.com/spiffe/go-spiffe">go-spiffe SDK</a></li>
+        <li><a href="https://github.com/spiffe/helm-charts-hardened">SPIRE Helm charts for Kubernetes</a></li>
+      </ul>
+
+      <div class="page-nav">
+        <a href="scenarios.html" class="prev">
+          <span class="label">Previous</span>
+          <span class="title">Hands-on Scenarios</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

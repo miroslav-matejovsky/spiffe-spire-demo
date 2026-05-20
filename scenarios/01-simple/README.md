@@ -103,7 +103,7 @@ The script performs these steps:
 ### Verify Agent Attestation
 
 ```powershell
-podman-compose exec spire-server /opt/spire/bin/spire-server agent list
+podman-compose -f scenarios/01-simple/compose.yml exec spire-server /opt/spire/bin/spire-server agent list
 ```
 
 You should see an attested agent in the `mirmat.org` trust domain with attestation type `join_token`, typically something like `spiffe://mirmat.org/spire/agent/join_token/<uuid>`.
@@ -113,8 +113,8 @@ You should see an attested agent in the `mirmat.org` trust domain with attestati
 Because the helper script launches the agent with a runtime join token, the server and agent logs are easiest to inspect separately:
 
 ```powershell
-podman-compose logs -f spire-server
-podman-compose logs -f spire-agent
+podman-compose -f scenarios/01-simple/compose.yml logs -f spire-server
+podman-compose -f scenarios/01-simple/compose.yml logs -f spire-agent
 ```
 
 ### What Happened?

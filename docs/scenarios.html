@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hands-on Scenarios - SPIFFE/SPIRE Guide</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>SPIFFE/SPIRE Guide</h2>
+      <div class="version">SPIRE v1.15.0</div>
+    </div>
+    <nav>
+      <div class="nav-section">Getting Started</div>
+      <a href="index.html">Home</a>
+      <a href="introduction.html">Introduction</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="concepts.html">Core Concepts</a>
+      <div class="nav-section">Operations</div>
+      <a href="deployment.html">Deployment</a>
+      <a href="networking.html">Networking &amp; Security</a>
+      <a href="configuration.html">Configuration</a>
+      <div class="nav-section">Practice</div>
+      <a href="scenarios.html" class="active">Hands-on Scenarios</a>
+      <a href="production.html">Production Guide</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="https://spiffe.io/docs/latest/">Official SPIFFE Docs &#8599;</a>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="breadcrumb">
+        <a href="index.html">Home</a><span class="sep">&gt;</span><span>Hands-on Scenarios</span>
+      </div>
+
+      <h1>Hands-on Scenarios</h1>
+      <p>Use this page as a concept map and learning path. It is not a replacement for the scenario READMEs. Each scenario README has exact steps, expected output, and deeper notes for that environment.</p>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Overview</div>
+        <p>This repository contains 7 progressive scenarios. Each builds on concepts from previous ones. Scenarios use Podman containers and stay self-contained so you can tear one down and move to the next without carrying state forward.</p>
+      </div>
+
+      <h2>Prerequisites</h2>
+      <p>Complete the environment setup in <a href="deployment.html">Deployment</a> before running any scenario. The helper scripts and binaries expect Podman, images, and local prerequisites to be ready first.</p>
+
+      <h2>Running Scenarios</h2>
+      <p>All scenarios follow the same flow. Build once, run one scenario at a time, and tear it down before starting another to avoid port and container-name conflicts.</p>
+      <pre><code>task build
+./bin/scenario-01-simple up
+./bin/scenario-01-simple step
+./bin/scenario-01-simple down</code></pre>
+      <ul>
+        <li><code>task build</code> builds all Go helper binaries.</li>
+        <li><code>up</code> starts the scenario.</li>
+        <li><code>step</code> runs guided mode.</li>
+        <li><code>down</code> tears the scenario down cleanly.</li>
+        <li>Only run one scenario at a time because host ports and container names overlap.</li>
+      </ul>
+
+      <h2>Concept Progression Map</h2>
+      <div class="ascii-diagram">
+        <pre><code>01: Trust Domain, SPIFFE IDs, Join Token
+     |
+02: + Dashboard, Server API, gRPC
+     |
+03: + Workload Registration, Unix Attestor, SVID Lifecycle
+     |
+04: + Certificate-based Attestation (x509pop/TPM concepts)
+     |
+05: + go-spiffe SDK, mTLS, Certificate Rotation
+     |
+06: + Prometheus, StatsD, Graphite Telemetry
+     |
+07: = Everything Combined: Multi-agent, Mixed Attestation, Production-like</code></pre>
+      </div>
+      <p class="diagram-caption">Move in order. Each scenario adds one more layer of SPIRE operations, workload identity, or production thinking.</p>
+
+      <h2>Scenario Guides</h2>
+
+      <div class="scenario-card">
+        <div class="scenario-number">01</div>
+        <h3>Scenario 01 - Simple SPIRE Setup</h3>
+        <p>Start with the smallest useful SPIRE deployment: one server and one agent. Focus on how a trust domain is defined and how an agent proves node identity with a join token.</p>
+        <h4>Concepts Taught</h4>
+        <div class="concepts">
+          <span>Trust domains</span>
+          <span>SPIFFE IDs</span>
+          <span>Join token node attestation</span>
+          <span>Basic server/agent</span>
+        </div>
+        <p><strong>Components:</strong> <code>spire-server</code>, <code>spire-agent</code></p>
+        <h4>Key Learning Points</h4>
+        <ul>
+          <li>Understand trust domain concept and naming boundaries.</li>
+          <li>See join token flow from bootstrap to successful attestation.</li>
+          <li>Inspect agent and server logs for attestation events.</li>
+          <li>Verify the agent becomes attested and receives identity material.</li>
+        </ul>
+        <h4>Try It</h4>
+        <pre><code>task build
+./bin/scenario-01-simple up
+./bin/scenario-01-simple step
+./bin/scenario-01-simple down</code></pre>
+        <p><a href="../scenarios/01-simple/README.md">Open scenario README</a></p>
+      </div>
+
+      <div class="scenario-card">
+        <div class="scenario-number">02</div>
+        <h3>Scenario 02 - Dashboard</h3>
+        <p>Add a dashboard to inspect SPIRE state through the server API. This makes agent status, entries, and bundles visible without using only CLI commands.</p>
+        <h4>Concepts Taught</h4>
+        <div class="concepts">
+          <span>SPIRE server API</span>
+          <span>gRPC</span>
+          <span>Dashboard visualization</span>
+          <span>Server API socket</span>
+        </div>
+        <p><strong>Components:</strong> <code>spire-server</code>, <code>spire-agent</code>, <code>dashboard</code></p>
+        <h4>Key Learning Points</h4>
+        <ul>
+          <li>Visualize SPIRE state instead of reading only raw CLI output.</li>
+          <li>Understand how the dashboard talks to the server API socket.</li>
+          <li>See agents, registration entries, and bundle data in one UI.</li>
+          <li>Use the dashboard at <a href="http://localhost:8080">http://localhost:8080</a>.</li>
+        </ul>
+        <h4>Try It</h4>
+        <pre><code>task build
+./bin/scenario-02-dashboard up
+./bin/scenario-02-dashboard step
+./bin/scenario-02-dashboard down</code></pre>
+        <p><a href="../scenarios/02-dashboard/README.md">Open scenario README</a></p>
+      </div>
+
+      <div class="scenario-card">
+        <div class="scenario-number">03</div>
+        <h3>Scenario 03 - Workload Registration</h3>
+        <p>Move from node identity to workload identity. You register a workload, match it with Unix selectors, and watch SPIRE issue and rotate an X.509 SVID.</p>
+        <h4>Concepts Taught</h4>
+        <div class="concepts">
+          <span>Workload registration</span>
+          <span>Unix workload attestor</span>
+          <span>SVID issuance</span>
+          <span>SVID lifecycle</span>
+        </div>
+        <p><strong>Components:</strong> <code>spire-server</code>, <code>spire-agent</code>, <code>dashboard</code>, <code>workload</code></p>
+        <h4>Key Learning Points</h4>
+        <ul>
+          <li>Register a workload entry and connect it to selectors.</li>
+          <li>Understand why <code>unix:uid</code> selectors are enough for local workload identity.</li>
+          <li>Fetch an X.509 SVID from the Workload API.</li>
+          <li>Observe SVID rotation and see identity stay stable while certificates change.</li>
+        </ul>
+        <h4>Try It</h4>
+        <pre><code>task build
+./bin/scenario-03-workload up
+./bin/scenario-03-workload step
+./bin/scenario-03-workload down</code></pre>
+        <p><a href="../scenarios/03-workload/README.md">Open scenario README</a></p>
+      </div>
+
+      <div class="scenario-card">
+        <div class="scenario-number">04</div>
+        <h3>Scenario 04 - Certificate-Based Attestation (TPM)</h3>
+        <p>Replace join-token bootstrap with stronger certificate-based node identity ideas. This scenario introduces x509pop flow and the TPM DevID mindset used on more hardware-rooted systems.</p>
+        <h4>Concepts Taught</h4>
+        <div class="concepts">
+          <span>x509pop attestation</span>
+          <span>Certificate-based node identity</span>
+          <span>Proof-of-possession</span>
+          <span>TPM concepts</span>
+        </div>
+        <p><strong>Components:</strong> <code>spire-server</code>, <code>spire-agent</code>, <code>dashboard</code></p>
+        <h4>Key Learning Points</h4>
+        <ul>
+          <li>Understand certificate-based attestation versus join token bootstrap.</li>
+          <li>See the x509pop flow and why proof-of-possession matters.</li>
+          <li>Learn how TPM DevID concepts fit stronger machine identity stories.</li>
+          <li>Compare operational tradeoffs between simple demos and stronger attestors.</li>
+        </ul>
+        <h4>Try It</h4>
+        <pre><code>task build
+./bin/scenario-04-tpm up
+./bin/scenario-04-tpm step
+./bin/scenario-04-tpm down</code></pre>
+        <p><a href="../scenarios/04-tpm/README.md">Open scenario README</a></p>
+      </div>
+
+      <div class="scenario-card">
+        <div class="scenario-number">05</div>
+        <h3>Scenario 05 - SVID API (mTLS Services)</h3>
+        <p>Apply SPIFFE identities in real services. Two Go workloads use <code>go-spiffe</code>, fetch SVIDs from the Workload API, establish mTLS automatically, and authorize by SPIFFE ID.</p>
+        <h4>Concepts Taught</h4>
+        <div class="concepts">
+          <span>go-spiffe SDK</span>
+          <span>mTLS</span>
+          <span>Workload API</span>
+          <span>Certificate rotation</span>
+          <span>SPIFFE-ID-based authorization</span>
+        </div>
+        <p><strong>Components:</strong> <code>spire-server</code>, <code>spire-agent</code>, <code>dashboard</code>, <code>svid-server</code>, <code>svid-client</code></p>
+        <h4>Key Learning Points</h4>
+        <ul>
+          <li>See Go services use <code>go-spiffe</code> instead of manual certificate handling.</li>
+          <li>Watch automatic mTLS setup happen from SPIFFE identities.</li>
+          <li>Inspect how SPIFFE IDs participate in the TLS handshake and authorization decision.</li>
+          <li>Observe zero-config certificate rotation through the Workload API.</li>
+          <li>Review UID selectors: <code>svid-server=10001</code>, <code>svid-client=10002</code>.</li>
+        </ul>
+        <h4>Try It</h4>
+        <pre><code>task build
+./bin/scenario-05-svid-api up
+./bin/scenario-05-svid-api step
+./bin/scenario-05-svid-api down</code></pre>
+        <p><a href="../scenarios/05-svid-api/README.md">Open scenario README</a></p>
+      </div>
+
+      <div class="scenario-card">
+        <div class="scenario-number">06</div>
+        <h3>Scenario 06 - Metrics and Telemetry</h3>
+        <p>Add observability so SPIRE stops being a black box. You enable metrics export, Prometheus scraping, and StatsD/Graphite pipelines to monitor identity operations.</p>
+        <h4>Concepts Taught</h4>
+        <div class="concepts">
+          <span>SPIRE telemetry</span>
+          <span>Prometheus pull model</span>
+          <span>StatsD push model</span>
+          <span>Graphite visualization</span>
+        </div>
+        <p><strong>Components:</strong> <code>spire-server</code>, <code>spire-agent</code>, <code>dashboard</code>, <code>graphite-statsd</code>, <code>prometheus</code></p>
+        <h4>Key Learning Points</h4>
+        <ul>
+          <li>Enable SPIRE metrics on both server and agent.</li>
+          <li>Understand Prometheus scraping as pull-based telemetry.</li>
+          <li>Compare it with StatsD push-based metrics flowing into Graphite.</li>
+          <li>Inspect Prometheus at <a href="http://localhost:9090">http://localhost:9090</a>.</li>
+          <li>Inspect Graphite dashboards at <a href="http://localhost:8080">http://localhost:8080</a>.</li>
+        </ul>
+        <h4>Try It</h4>
+        <pre><code>task build
+./bin/scenario-06-metrics up
+./bin/scenario-06-metrics step
+./bin/scenario-06-metrics down</code></pre>
+        <p><a href="../scenarios/06-metrics/README.md">Open scenario README</a></p>
+      </div>
+
+      <div class="scenario-card">
+        <div class="scenario-number">07</div>
+        <h3>Scenario 07 - Production-Like Setup</h3>
+        <p>Finish with a combined lab that looks much closer to a real deployment. Multiple agents, different attestation methods, separate workloads, and telemetry all work together.</p>
+        <h4>Concepts Taught</h4>
+        <div class="concepts">
+          <span>Multi-agent deployment</span>
+          <span>Mixed attestation</span>
+          <span>Separate workload ownership</span>
+          <span>Telemetry</span>
+          <span>Production-like architecture</span>
+        </div>
+        <p><strong>Components:</strong> <code>spire-server</code>, <code>spire-agent-1</code>, <code>spire-agent-2</code>, <code>workload-1</code>, <code>workload-2</code>, <code>dashboard</code>, <code>graphite-statsd</code>, <code>prometheus</code></p>
+        <h4>Key Learning Points</h4>
+        <ul>
+          <li>Operate multiple agents with different attestation methods in one environment.</li>
+          <li>Understand mixed attestation using <code>join_token</code> and <code>x509pop</code>.</li>
+          <li>See separate workload ownership and identity boundaries per agent.</li>
+          <li>Combine monitoring, dashboard visibility, and workload identity in one lab.</li>
+          <li>Use this scenario as bridge to the production guidance on next page.</li>
+        </ul>
+        <h4>Try It</h4>
+        <pre><code>task build
+./bin/scenario-07-production up
+./bin/scenario-07-production step
+./bin/scenario-07-production down</code></pre>
+        <p><a href="../scenarios/07-production/README.md">Open scenario README</a></p>
+      </div>
+
+      <h2>What's Not Covered</h2>
+      <p>These scenarios focus on learning flow, not every SPIFFE and SPIRE feature. After finishing the lab path, keep going with these topics:</p>
+      <ul>
+        <li><a href="https://spiffe.io/docs/latest/deploying/configuring/#configuring-federation">Federation (cross-trust-domain)</a></li>
+        <li><a href="https://spiffe.io/docs/latest/deploying/svids/">JWT SVIDs</a></li>
+        <li><a href="https://spiffe.io/docs/latest/try/getting-started-k8s/">Kubernetes deployment with k8s_psat</a></li>
+        <li><a href="https://spiffe.io/docs/latest/deploying/spire_server/#high-availability">High Availability with multiple servers</a></li>
+        <li><a href="https://spiffe.io/docs/latest/architecture/nested/">Nested SPIRE</a></li>
+      </ul>
+
+      <div class="page-nav">
+        <a href="configuration.html" class="prev">
+          <span class="label">Previous</span>
+          <span class="title">Configuration</span>
+        </a>
+        <a href="production.html" class="next">
+          <span class="label">Next</span>
+          <span class="title">Production Guide</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

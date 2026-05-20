@@ -1,63 +1,73 @@
 # https://taskfile.dev
 version: '3'
 
-vars:
-  SVID_API_DIR: scenarios/05-svid-api
-
 tasks:
   build:
     desc: Build all Go binaries
-    deps: [build-dashboard, build-svid-server, build-svid-client]
+    deps: [build-dashboard, build-svid-server, build-svid-client, build-scenarios]
 
   build-dashboard:
     desc: Build the SPIRE dashboard
     cmds:
-      - go build -o dashboard/dashboard{{exeExt}} ./dashboard/
+      - go build -o bin/dashboard{{exeExt}} ./cmd/dashboard/
     sources:
-      - "dashboard/**/*.go"
-      - "dashboard/templates/*"
+      - "cmd/dashboard/**/*.go"
+      - "cmd/dashboard/templates/*"
       - go.mod
       - go.sum
     generates:
-      - "dashboard/dashboard{{exeExt}}"
+      - "bin/dashboard{{exeExt}}"
 
   build-svid-server:
     desc: Build the SVID API server
     cmds:
-      - go build -o {{.SVID_API_DIR}}/server/svid-server{{exeExt}} ./{{.SVID_API_DIR}}/server/
+      - go build -o bin/svid-server{{exeExt}} ./cmd/svid-server/
     sources:
-      - "{{.SVID_API_DIR}}/server/**/*.go"
+      - "cmd/svid-server/**/*.go"
       - go.mod
       - go.sum
     generates:
-      - "{{.SVID_API_DIR}}/server/svid-server{{exeExt}}"
+      - "bin/svid-server{{exeExt}}"
 
   build-svid-client:
     desc: Build the SVID API client
     cmds:
-      - go build -o {{.SVID_API_DIR}}/client/svid-client{{exeExt}} ./{{.SVID_API_DIR}}/client/
+      - go build -o bin/svid-client{{exeExt}} ./cmd/svid-client/
     sources:
-      - "{{.SVID_API_DIR}}/client/**/*.go"
+      - "cmd/svid-client/**/*.go"
       - go.mod
       - go.sum
     generates:
-      - "{{.SVID_API_DIR}}/client/svid-client{{exeExt}}"
+      - "bin/svid-client{{exeExt}}"
+
+  build-scenarios:
+    desc: Build all scenario binaries
+    cmds:
+      - go build -o bin/scenario-01-simple{{exeExt}} ./cmd/scenario-01-simple/
+      - go build -o bin/scenario-02-dashboard{{exeExt}} ./cmd/scenario-02-dashboard/
+      - go build -o bin/scenario-03-workload{{exeExt}} ./cmd/scenario-03-workload/
+      - go build -o bin/scenario-04-tpm{{exeExt}} ./cmd/scenario-04-tpm/
+      - go build -o bin/scenario-05-svid-api{{exeExt}} ./cmd/scenario-05-svid-api/
+      - go build -o bin/scenario-06-metrics{{exeExt}} ./cmd/scenario-06-metrics/
+      - go build -o bin/scenario-07-production{{exeExt}} ./cmd/scenario-07-production/
+    sources:
+      - "cmd/scenario-*/**/*.go"
+      - "internal/**/*.go"
+      - go.mod
+      - go.sum
+    generates:
+      - "bin/scenario-01-simple{{exeExt}}"
+      - "bin/scenario-02-dashboard{{exeExt}}"
+      - "bin/scenario-03-workload{{exeExt}}"
+      - "bin/scenario-04-tpm{{exeExt}}"
+      - "bin/scenario-05-svid-api{{exeExt}}"
+      - "bin/scenario-06-metrics{{exeExt}}"
+      - "bin/scenario-07-production{{exeExt}}"
 
   clean:
     desc: Remove all built binaries
     cmds:
-      - cmd: rm -f dashboard/dashboard{{exeExt}}
-        platforms: [linux, darwin]
-      - cmd: rm -f {{.SVID_API_DIR}}/server/svid-server{{exeExt}}
-        platforms: [linux, darwin]
-      - cmd: rm -f {{.SVID_API_DIR}}/client/svid-client{{exeExt}}
-        platforms: [linux, darwin]
-      - cmd: if exist "dashboard\dashboard{{exeExt}}" del /f "dashboard\dashboard{{exeExt}}"
-        platforms: [windows]
-      - cmd: if exist "{{.SVID_API_DIR}}\server\svid-server{{exeExt}}" del /f "{{.SVID_API_DIR}}\server\svid-server{{exeExt}}"
-        platforms: [windows]
-      - cmd: if exist "{{.SVID_API_DIR}}\client\svid-client{{exeExt}}" del /f "{{.SVID_API_DIR}}\client\svid-client{{exeExt}}"
-        platforms: [windows]
+      - rm -f bin/*
 
   lint:
     desc: Run Go linter
@@ -68,6 +78,50 @@ tasks:
     desc: Run Go tests
     cmds:
       - go test ./...
+
+# ---- running stuff ----
+
+  run-scenario-01-simple:
+    desc: Run the simple scenario
+    silent: true
+    cmds:
+      - go run ./cmd/scenario-01-simple/ {{.CLI_ARGS}}
+
+  run-scenario-02-dashboard:
+    desc: Run the dashboard scenario
+    silent: true
+    cmds:
+      - go run ./cmd/scenario-02-dashboard/ {{.CLI_ARGS}}
+
+  run-scenario-03-workload:
+    desc: Run the workload scenario
+    silent: true
+    cmds:
+      - go run ./cmd/scenario-03-workload/ {{.CLI_ARGS}}
+
+  run-scenario-04-tpm:
+    desc: Run the TPM scenario
+    silent: true
+    cmds:
+      - go run ./cmd/scenario-04-tpm/ {{.CLI_ARGS}}
+
+  run-scenario-05-svid-api:
+    desc: Run the SVID API scenario
+    silent: true
+    cmds:
+      - go run ./cmd/scenario-05-svid-api/ {{.CLI_ARGS}}
+
+  run-scenario-06-metrics:
+    desc: Run the metrics scenario
+    silent: true
+    cmds:
+      - go run ./cmd/scenario-06-metrics/ {{.CLI_ARGS}}
+
+  run-scenario-07-production:
+    desc: Run the production scenario
+    silent: true
+    cmds:
+      - go run ./cmd/scenario-07-production/ {{.CLI_ARGS}}
 
 # ---- maintenance tasks ----
 

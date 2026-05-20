@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Networking &amp; Security - SPIFFE/SPIRE Guide</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>SPIFFE/SPIRE Guide</h2>
+      <div class="version">SPIRE v1.15.0</div>
+    </div>
+    <nav>
+      <div class="nav-section">Getting Started</div>
+      <a href="index.html">Home</a>
+      <a href="introduction.html">Introduction</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="concepts.html">Core Concepts</a>
+      <div class="nav-section">Operations</div>
+      <a href="deployment.html">Deployment</a>
+      <a href="networking.html" class="active">Networking &amp; Security</a>
+      <a href="configuration.html">Configuration</a>
+      <div class="nav-section">Practice</div>
+      <a href="scenarios.html">Hands-on Scenarios</a>
+      <a href="production.html">Production Guide</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="https://spiffe.io/docs/latest/">Official SPIFFE Docs &#8599;</a>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="breadcrumb">
+        <a href="index.html">Home</a><span class="sep">&gt;</span><span>Networking &amp; Security</span>
+      </div>
+
+      <h1>Networking, Ports, and Security Considerations</h1>
+      <p>SPIRE uses a small set of network paths. Most sensitive interfaces are local Unix domain sockets, while the server-to-agent control plane uses mutually authenticated gRPC.</p>
+
+      <h2>Network Architecture</h2>
+      <ul>
+        <li><strong>Server-to-Agent:</strong> gRPC over mTLS on port <code>8081</code>. This is the control channel for node attestation, bundle delivery, and certificate rotation.</li>
+        <li><strong>Agent-to-Workload:</strong> Unix Domain Socket access to the Workload API. No TCP port is required because workloads talk to the local agent through local IPC.</li>
+        <li><strong>Dashboard-to-Server:</strong> Unix Domain Socket access through a shared volume mounted at the SPIRE Server API socket path.</li>
+        <li><strong>External access:</strong> the demo dashboard is exposed on port <code>8080</code> in most scenarios so you can inspect SPIRE state from a browser.</li>
+      </ul>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Design choice</div>
+        <p>The most privileged interfaces stay off the network. In these demos, the browser reaches only the dashboard, while the dashboard itself talks to the SPIRE Server through a shared Unix socket.</p>
+      </div>
+
+      <h2>Ports Reference</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Port</th>
+            <th>Protocol</th>
+            <th>Component</th>
+            <th>Purpose</th>
+            <th>Exposed In</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>8081</code></td>
+            <td>gRPC/mTLS</td>
+            <td>Server</td>
+            <td>Agent-to-server communication</td>
+            <td>All scenarios (internal)</td>
+          </tr>
+          <tr>
+            <td><code>8080</code></td>
+            <td>HTTP</td>
+            <td>Dashboard</td>
+            <td>Web UI</td>
+            <td>Scenarios 02-05 and 07. Scenario 06 uses host port 8090 for the dashboard because 8080 is used by Graphite.</td>
+          </tr>
+          <tr>
+            <td><code>8088</code></td>
+            <td>HTTP</td>
+            <td>Server</td>
+            <td>Prometheus metrics endpoint</td>
+            <td>Scenarios 06-07 (internal monitoring network)</td>
+          </tr>
+          <tr>
+            <td><code>8089</code></td>
+            <td>HTTP</td>
+            <td>Agent</td>
+            <td>Prometheus metrics endpoint</td>
+            <td>Scenarios 06-07. Scenario 07 also exposes agent-2 metrics internally on 8090.</td>
+          </tr>
+          <tr>
+            <td><code>8125</code></td>
+            <td>UDP</td>
+            <td>StatsD</td>
+            <td>Metrics push</td>
+            <td>Scenarios 06-07</td>
+          </tr>
+          <tr>
+            <td><code>9090</code></td>
+            <td>HTTP</td>
+            <td>Prometheus</td>
+            <td>Prometheus UI</td>
+            <td>Scenarios 06-07</td>
+          </tr>
+          <tr>
+            <td><code>3000/80</code></td>
+            <td>HTTP</td>
+            <td>Graphite</td>
+            <td>Metrics dashboard</td>
+            <td>Scenarios 06-07. Scenario 06 maps Graphite to host port 8080, while scenario 07 maps it to host port 3000.</td>
+          </tr>
+          <tr>
+            <td><code>8443</code></td>
+            <td>HTTPS</td>
+            <td>Server</td>
+            <td>Federation bundle endpoint</td>
+            <td>Not used in these demos</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Unix Domain Sockets</h2>
+      <p>Two sockets matter most in the demo environments:</p>
+      <ul>
+        <li><strong>Server API socket:</strong> <code>/tmp/spire-server/private/api.sock</code> for administrative and dashboard access to SPIRE Server APIs.</li>
+        <li><strong>Workload API socket:</strong> <code>/tmp/spire-agent/public/api.sock</code> in common SPIRE examples, or <code>/opt/spire/sockets/workload_api.sock</code> in these demos.</li>
+      </ul>
+      <p>Containers share these sockets through named volumes. That is why the dashboard can talk to the server without opening a remote admin port, and why demo workloads can fetch SVIDs without using the network.</p>
+      <p>Applications usually discover the workload socket through the <code>SPIFFE_ENDPOINT_SOCKET</code> environment variable or an explicit socket path in configuration.</p>
+
+      <h2>Firewall Rules</h2>
+      <ul>
+        <li><strong>Server:</strong> allow inbound <code>8081</code> from all authorized agents.</li>
+        <li><strong>Agents:</strong> allow outbound traffic to <code>server:8081</code>.</li>
+        <li><strong>Dashboard:</strong> allow inbound <code>8080</code> only if you intentionally expose the web UI.</li>
+        <li><strong>Metrics:</strong> allow <code>8088</code>, <code>8089</code>, and <code>9090</code> only on your monitoring network or within the container network.</li>
+        <li><strong>Workload API:</strong> no firewall ports are needed because it is a Unix socket, not a TCP listener.</li>
+      </ul>
+
+      <h2>Security Considerations</h2>
+      <ul>
+        <li><strong>TLS:</strong> all server-agent communication uses mTLS, so both sides authenticate each other.</li>
+        <li><strong>Bootstrap trust:</strong> agents need an initial trust bundle or bootstrap mode before they can validate the server. <code>insecure_bootstrap = true</code> is for development only.</li>
+        <li><strong>Workload API access control:</strong> protect the socket with file permissions, workload attestors, and careful PID or namespace boundaries.</li>
+        <li><strong>Rate limiting:</strong> SPIRE rate-limits sensitive operations such as node attestation and signing to reduce abuse and accidental overload.</li>
+        <li><strong>PROXY protocol support:</strong> SPIRE v1.15.0 can preserve client IP information behind supported load balancers.</li>
+        <li><strong>Post-quantum TLS:</strong> the <code>require_pq_kem</code> option can require hybrid key exchange such as <code>X25519MLKEM768</code> where supported.</li>
+      </ul>
+
+      <div class="callout callout-danger">
+        <div class="callout-title">Danger</div>
+        <p>Never expose the SPIRE Server API socket to untrusted networks. It is an administrative interface and should stay on a protected local socket or tightly controlled internal path.</p>
+      </div>
+
+      <div class="callout callout-danger">
+        <div class="callout-title">Danger</div>
+        <p>Never use <code>insecure_bootstrap</code> in production. Replace it with a real trust bundle distribution path or a stronger node attestation flow.</p>
+      </div>
+
+      <h2>Per-Scenario Network Overview</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>Exposed Ports</th>
+            <th>Network Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>01-simple</td>
+            <td>None</td>
+            <td>Only internal server-agent communication on 8081. No dashboard, no workload socket sharing to external tools.</td>
+          </tr>
+          <tr>
+            <td>02-dashboard</td>
+            <td>8080</td>
+            <td>Dashboard is exposed to the browser. Dashboard reaches SPIRE Server through the shared server API socket volume.</td>
+          </tr>
+          <tr>
+            <td>03-workload</td>
+            <td>8080</td>
+            <td>Adds workload-side Workload API access through a shared Unix socket and PID namespace sharing with the agent.</td>
+          </tr>
+          <tr>
+            <td>04-tpm</td>
+            <td>8080</td>
+            <td>Dashboard remains exposed. Agent identity changes to x509pop-style attestation, but the main network shape stays the same.</td>
+          </tr>
+          <tr>
+            <td>05-svid-api</td>
+            <td>8080</td>
+            <td>Dashboard is public on 8080. The demo mTLS service pair communicates internally on 8443, and both workloads use the shared Workload API socket volume.</td>
+          </tr>
+          <tr>
+            <td>06-metrics</td>
+            <td>8080, 8090, 8125/UDP, 9090</td>
+            <td>Graphite uses host port 8080, dashboard moves to 8090, and Prometheus scrapes internal SPIRE telemetry endpoints on 8088 and 8089.</td>
+          </tr>
+          <tr>
+            <td>07-production</td>
+            <td>8080, 3000, 8125/UDP, 9090</td>
+            <td>Dashboard is on 8080, Graphite is on 3000, and Prometheus scrapes server and two agents on internal ports 8088, 8089, and 8090.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="page-nav">
+        <a href="deployment.html" class="prev">
+          <span class="label">Previous</span>
+          <span class="title">Deployment</span>
+        </a>
+        <a href="configuration.html" class="next">
+          <span class="label">Next</span>
+          <span class="title">Configuration</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuration - SPIFFE/SPIRE Guide</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>SPIFFE/SPIRE Guide</h2>
+      <div class="version">SPIRE v1.15.0</div>
+    </div>
+    <nav>
+      <div class="nav-section">Getting Started</div>
+      <a href="index.html">Home</a>
+      <a href="introduction.html">Introduction</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="concepts.html">Core Concepts</a>
+      <div class="nav-section">Operations</div>
+      <a href="deployment.html">Deployment</a>
+      <a href="networking.html">Networking &amp; Security</a>
+      <a href="configuration.html" class="active">Configuration</a>
+      <div class="nav-section">Practice</div>
+      <a href="scenarios.html">Hands-on Scenarios</a>
+      <a href="production.html">Production Guide</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="https://spiffe.io/docs/latest/">Official SPIFFE Docs &#8599;</a>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="breadcrumb">
+        <a href="index.html">Home</a><span class="sep">&gt;</span><span>Configuration</span>
+      </div>
+
+      <h1>Configuration and Management of SPIRE</h1>
+      <p>SPIRE behavior is controlled by <code>server.conf</code> and <code>agent.conf</code>. The scenarios in this repository keep configurations intentionally small so you can see how trust domain, sockets, plugins, telemetry, and attestation settings fit together.</p>
+
+      <h2>Configuration Format</h2>
+      <p>SPIRE configuration files use HCL (HashiCorp Configuration Language) or JSON. In practice, most examples and nearly all files in this repository use HCL. The main files are <code>server.conf</code> for the SPIRE Server and <code>agent.conf</code> for each SPIRE Agent.</p>
+
+      <h2>Server Configuration Reference</h2>
+      <p>Core SPIRE Server settings live under the <code>server { ... }</code> block.</p>
+      <table class="config-table">
+        <thead>
+          <tr>
+            <th>Option</th>
+            <th>Description</th>
+            <th>Typical or Default Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>trust_domain</code></td>
+            <td>Required. Defines the root SPIFFE trust domain used for all issued identities.</td>
+            <td><code>mirmat.org</code> in this repository</td>
+          </tr>
+          <tr>
+            <td><code>bind_address</code></td>
+            <td>Address the server listens on for agent connections.</td>
+            <td><code>0.0.0.0</code></td>
+          </tr>
+          <tr>
+            <td><code>bind_port</code></td>
+            <td>Port used for agent-to-server communication.</td>
+            <td><code>8081</code></td>
+          </tr>
+          <tr>
+            <td><code>data_dir</code></td>
+            <td>Required. Stores persistent state such as CA keys and the local database.</td>
+            <td>Scenario-specific container path, commonly <code>/opt/spire/data/server</code></td>
+          </tr>
+          <tr>
+            <td><code>socket_path</code></td>
+            <td>Unix socket for SPIRE Server administrative APIs.</td>
+            <td><code>/tmp/spire-server/private/api.sock</code></td>
+          </tr>
+          <tr>
+            <td><code>log_level</code></td>
+            <td>Controls verbosity.</td>
+            <td><code>DEBUG</code>, <code>INFO</code>, <code>WARN</code>, or <code>ERROR</code></td>
+          </tr>
+          <tr>
+            <td><code>log_format</code></td>
+            <td>Controls structured output format.</td>
+            <td><code>text</code> or <code>json</code></td>
+          </tr>
+          <tr>
+            <td><code>ca_key_type</code></td>
+            <td>Selects the key algorithm for the upstream or local CA.</td>
+            <td><code>ec-p256</code>, <code>ec-p384</code>, <code>rsa-2048</code>, or <code>rsa-4096</code></td>
+          </tr>
+          <tr>
+            <td><code>ca_ttl</code></td>
+            <td>Lifetime of the SPIRE Server CA certificate.</td>
+            <td>Often <code>24h</code> in demos</td>
+          </tr>
+          <tr>
+            <td><code>default_x509_svid_ttl</code></td>
+            <td>Default X.509 SVID lifetime.</td>
+            <td><code>1h</code></td>
+          </tr>
+          <tr>
+            <td><code>default_jwt_svid_ttl</code></td>
+            <td>Default JWT-SVID lifetime.</td>
+            <td><code>5m</code></td>
+          </tr>
+          <tr>
+            <td><code>agent_ttl</code></td>
+            <td>Lifetime for agent SVIDs and node credentials.</td>
+            <td>Deployment-specific</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>Official reference: <a href="https://spiffe.io/docs/latest/deploying/spire_server/">SPIRE Server configuration</a></p>
+
+      <h3>Example <code>server.conf</code> from this repository</h3>
+      <p>The following example is based on the production-like scenario and shows a server configured for both <code>join_token</code> and <code>x509pop</code> node attestation plus telemetry.</p>
+      <pre><code>server {
+    bind_address = "0.0.0.0"
+    bind_port = "8081"
+    socket_path = "/tmp/spire-server/private/api.sock"
+    trust_domain = "mirmat.org"
+    data_dir = "/opt/spire/data/server"
+    log_level = "INFO"
+    log_file = "/opt/spire/logs/spire.log"
+    ca_ttl = "24h"
+}
+
+plugins {
+    DataStore "sql" {
+        plugin_data {
+            database_type = "sqlite3"
+            connection_string = "/opt/spire/data/server/datastore.sqlite3"
+        }
+    }
+    NodeAttestor "join_token" {
+        plugin_data {}
+    }
+    NodeAttestor "x509pop" {
+        plugin_data {
+            ca_bundle_path = "/opt/spire/conf/server/devid-ca.pem"
+        }
+    }
+    KeyManager "memory" {
+        plugin_data = {}
+    }
+}
+
+telemetry {
+    Prometheus {
+        host = "spire-server"
+        port = 8088
+    }
+
+    Statsd = [
+        {
+            address = "graphite-statsd:8125"
+        },
+    ]
+}</code></pre>
+
+      <h2>Server Plugin Configuration</h2>
+      <p>SPIRE Server features are extended through plugins. The following examples show the plugin types used most often when moving from local demos to real deployments.</p>
+
+      <h3>DataStore <code>sql</code></h3>
+      <p>Used for persistent storage. SQLite is fine for demos, while PostgreSQL and MySQL are the common production choices.</p>
+      <pre><code>DataStore "sql" {
+    plugin_data {
+        database_type = "postgres"
+        connection_string = "dbname=spire user=spire password=secret sslmode=verify-full"
+    }
+}</code></pre>
+
+      <h3>KeyManager</h3>
+      <ul>
+        <li><code>memory</code> for quick demos and ephemeral lab runs</li>
+        <li><code>disk</code> for simple persistent storage</li>
+        <li><code>aws_kms</code> when you want hardware-backed or managed key storage in production</li>
+      </ul>
+      <pre><code>KeyManager "disk" {
+    plugin_data {
+        keys_path = "/opt/spire/data/server/keys.json"
+    }
+}
+
+KeyManager "aws_kms" {
+    plugin_data {
+        region = "eu-central-1"
+        key_id = "arn:aws:kms:..."
+    }
+}</code></pre>
+
+      <h3>NodeAttestor</h3>
+      <p>Node attestors prove what machine or platform is allowed to run an agent.</p>
+      <pre><code>NodeAttestor "join_token" {
+    plugin_data {}
+}
+
+NodeAttestor "x509pop" {
+    plugin_data {
+        ca_bundle_path = "/opt/spire/conf/server/devid-ca.pem"
+    }
+}
+
+NodeAttestor "aws_iid" {
+    plugin_data {
+        access_key_id = "example"
+        secret_access_key = "example"
+    }
+}
+
+NodeAttestor "k8s_psat" {
+    plugin_data {
+        clusters = {
+            demo = {
+                service_account_allow_list = ["spire:spire-agent"]
+            }
+        }
+    }
+}</code></pre>
+
+      <h3>UpstreamAuthority</h3>
+      <p>Use an upstream authority when SPIRE should mint intermediates instead of acting as the ultimate root.</p>
+      <pre><code>UpstreamAuthority "disk" {
+    plugin_data {
+        cert_file_path = "/opt/spire/upstream/ca.crt"
+        key_file_path = "/opt/spire/upstream/ca.key"
+    }
+}
+
+UpstreamAuthority "vault" {
+    plugin_data {
+        vault_addr = "https://vault.example.org:8200"
+        pki_mount_point = "pki"
+        role = "spire-intermediate"
+    }
+}
+
+UpstreamAuthority "aws_pca" {
+    plugin_data {
+        certificate_authority_arn = "arn:aws:acm-pca:..."
+        region = "eu-central-1"
+    }
+}
+
+UpstreamAuthority "spire" {
+    plugin_data {
+        server_address = "upstream-spire.example.org"
+        server_port = "8081"
+    }
+}</code></pre>
+
+      <h2>Agent Configuration Reference</h2>
+      <table class="config-table">
+        <thead>
+          <tr>
+            <th>Option</th>
+            <th>Description</th>
+            <th>Typical or Default Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>trust_domain</code></td>
+            <td>Required. Must match the SPIRE Server trust domain.</td>
+            <td><code>mirmat.org</code></td>
+          </tr>
+          <tr>
+            <td><code>server_address</code></td>
+            <td>Hostname or IP of the SPIRE Server.</td>
+            <td><code>spire-server</code> in the demo containers</td>
+          </tr>
+          <tr>
+            <td><code>server_port</code></td>
+            <td>SPIRE Server control-plane port.</td>
+            <td><code>8081</code></td>
+          </tr>
+          <tr>
+            <td><code>socket_path</code></td>
+            <td>Workload API socket path exposed to local workloads.</td>
+            <td><code>/opt/spire/sockets/workload_api.sock</code> in the demos</td>
+          </tr>
+          <tr>
+            <td><code>data_dir</code></td>
+            <td>Local storage for agent state and keys.</td>
+            <td><code>/opt/spire/data/agent</code></td>
+          </tr>
+          <tr>
+            <td><code>trust_bundle_path</code></td>
+            <td>Path to the bootstrap trust bundle when not using insecure bootstrap.</td>
+            <td>Scenario-specific file path</td>
+          </tr>
+          <tr>
+            <td><code>insecure_bootstrap</code></td>
+            <td>Development-only shortcut for bootstrapping trust.</td>
+            <td><code>true</code> only in demo-style environments</td>
+          </tr>
+          <tr>
+            <td><code>log_level</code></td>
+            <td>Controls agent logging verbosity.</td>
+            <td><code>DEBUG</code>, <code>INFO</code>, <code>WARN</code>, or <code>ERROR</code></td>
+          </tr>
+          <tr>
+            <td><code>log_format</code></td>
+            <td>Controls structured output format.</td>
+            <td><code>text</code> or <code>json</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>Official reference: <a href="https://spiffe.io/docs/latest/deploying/spire_agent/">SPIRE Agent configuration</a></p>
+
+      <h3>Example <code>agent.conf</code> from this repository</h3>
+      <p>This example is based on the metrics scenario and shows an agent using <code>x509pop</code>, a disk-backed key manager, and both Prometheus and StatsD telemetry.</p>
+      <pre><code>agent {
+    data_dir = "/opt/spire/data/agent"
+    log_level = "INFO"
+    log_file = "/opt/spire/logs/spire.log"
+    server_address = "spire-server"
+    server_port = "8081"
+    socket_path ="/opt/spire/sockets/workload_api.sock"
+    trust_bundle_path = "/opt/spire/conf/agent/bootstrap.crt"
+    trust_domain = "mirmat.org"
+}
+
+plugins {
+    NodeAttestor "x509pop" {
+        plugin_data {
+            private_key_path = "/opt/spire/conf/agent/agent.key.pem"
+            certificate_path = "/opt/spire/conf/agent/agent.crt.pem"
+        }
+    }
+    KeyManager "disk" {
+        plugin_data {
+            directory = "/opt/spire/data/agent"
+        }
+    }
+    WorkloadAttestor "unix" {
+        plugin_data {
+        }
+    }
+}
+
+telemetry {
+    Prometheus {
+        host = "spire-agent"
+        port = 8089
+    }
+
+    Statsd = [
+        {
+            address = "graphite-statsd:8125"
+        },
+    ]
+}</code></pre>
+
+      <h2>Agent Plugin Configuration</h2>
+      <h3>NodeAttestor</h3>
+      <pre><code>NodeAttestor "join_token" {
+    plugin_data {}
+}
+
+NodeAttestor "x509pop" {
+    plugin_data {
+        private_key_path = "/opt/spire/conf/agent/agent.key.pem"
+        certificate_path = "/opt/spire/conf/agent/agent.crt.pem"
+    }
+}</code></pre>
+
+      <h3>WorkloadAttestor</h3>
+      <pre><code>WorkloadAttestor "unix" {
+    plugin_data {
+        discover_workload_path = true
+    }
+}
+
+WorkloadAttestor "k8s" {
+    plugin_data {
+        kube_config_file = "/etc/kubernetes/kubeconfig"
+    }
+}
+
+WorkloadAttestor "docker" {
+    plugin_data {
+        docker_socket_path = "/var/run/docker.sock"
+    }
+}</code></pre>
+
+      <h3>KeyManager</h3>
+      <pre><code>KeyManager "memory" {
+    plugin_data {}
+}
+
+KeyManager "disk" {
+    plugin_data {
+        directory = "/opt/spire/data/agent"
+    }
+}</code></pre>
+
+      <h2>Telemetry Configuration</h2>
+      <p>Telemetry is optional but strongly recommended for operations. SPIRE can expose Prometheus endpoints, push to StatsD, or emit DogStatsd metrics.</p>
+      <ul>
+        <li><strong>Prometheus:</strong> configure a host and port for the HTTP metrics endpoint.</li>
+        <li><strong>StatsD:</strong> configure one or more collector addresses.</li>
+        <li><strong>DogStatsd:</strong> configure a Datadog-compatible endpoint when that is your monitoring stack.</li>
+      </ul>
+      <p>Official guide: <a href="https://spiffe.io/docs/latest/deploying/telemetry_config/">Telemetry configuration</a></p>
+      <pre><code>telemetry {
+    Prometheus {
+        host = "spire-server"
+        port = 8088
+    }
+
+    Statsd = [
+        {
+            address = "graphite-statsd:8125"
+        },
+    ]
+
+    DogStatsd = [
+        {
+            address = "datadog-agent:8125"
+        },
+    ]
+}</code></pre>
+      <p>Scenario 06 is the clearest repository example for telemetry because it wires SPIRE Server, SPIRE Agent, Prometheus, and Graphite/StatsD together in one compose stack.</p>
+
+      <h2>Health Check Configuration</h2>
+      <p>Health endpoints make it easier to drive readiness probes, container health checks, and startup orchestration.</p>
+      <pre><code>health_checks {
+    listener_enabled = true
+    bind_address = "0.0.0.0"
+    bind_port = "8080"
+    live_path = "/live"
+    ready_path = "/ready"
+}</code></pre>
+      <p>Use <code>/live</code> to confirm the process is running and <code>/ready</code> to confirm the component is actually ready to serve.</p>
+
+      <h2>Registration Entry Management</h2>
+      <p>Registration entries tell SPIRE which workloads or downstream agents can receive which SPIFFE IDs.</p>
+      <p>Official guide: <a href="https://spiffe.io/docs/latest/deploying/registering/">Registering workloads and nodes</a></p>
+      <pre><code>spire-server entry create \
+  -spiffeID spiffe://mirmat.org/workload \
+  -parentID spiffe://mirmat.org/spire/agent/join_token/worker-1 \
+  -selector unix:uid:10001
+
+spire-server entry show
+
+spire-server entry update \
+  -entryID &lt;ENTRY_ID&gt; \
+  -spiffeID spiffe://mirmat.org/workload-v2 \
+  -selector unix:uid:10002
+
+spire-server entry delete -entryID &lt;ENTRY_ID&gt;
+
+spire-server token generate -spiffeID spiffe://mirmat.org/spire/agent/join_token/worker-1</code></pre>
+
+      <h2>Configuration Examples from This Repository</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Scenario</th>
+            <th>Config File</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Join token attestation</td>
+            <td>01-simple</td>
+            <td><code>spire/server/server.conf</code>, <code>spire/agent/agent.conf</code></td>
+          </tr>
+          <tr>
+            <td>Dashboard API socket</td>
+            <td>02-dashboard</td>
+            <td><code>compose.yml</code></td>
+          </tr>
+          <tr>
+            <td>Workload registration</td>
+            <td>03-workload</td>
+            <td><code>scripts/register-workload.ps1</code></td>
+          </tr>
+          <tr>
+            <td>x509pop attestation</td>
+            <td>04-tpm</td>
+            <td><code>spire/server/server.conf</code>, <code>spire/agent/agent.conf</code></td>
+          </tr>
+          <tr>
+            <td>Telemetry and metrics</td>
+            <td>06-metrics</td>
+            <td><code>spire/server/server.conf</code>, <code>spire/agent/agent.conf</code></td>
+          </tr>
+          <tr>
+            <td>Multi-agent and mixed attestation</td>
+            <td>07-production</td>
+            <td><code>spire/server/server.conf</code>, <code>spire/agent-1/agent.conf</code>, <code>spire/agent-2/agent.conf</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="page-nav">
+        <a href="networking.html" class="prev">
+          <span class="label">Previous</span>
+          <span class="title">Networking &amp; Security</span>
+        </a>
+        <a href="scenarios.html" class="next">
+          <span class="label">Next</span>
+          <span class="title">Hands-on Scenarios</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

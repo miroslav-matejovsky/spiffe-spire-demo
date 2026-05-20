@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deployment - SPIFFE/SPIRE Guide</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>SPIFFE/SPIRE Guide</h2>
+      <div class="version">SPIRE v1.15.0</div>
+    </div>
+    <nav>
+      <div class="nav-section">Getting Started</div>
+      <a href="index.html">Home</a>
+      <a href="introduction.html">Introduction</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="concepts.html">Core Concepts</a>
+      <div class="nav-section">Operations</div>
+      <a href="deployment.html" class="active">Deployment</a>
+      <a href="networking.html">Networking &amp; Security</a>
+      <a href="configuration.html">Configuration</a>
+      <div class="nav-section">Practice</div>
+      <a href="scenarios.html">Hands-on Scenarios</a>
+      <a href="production.html">Production Guide</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="https://spiffe.io/docs/latest/">Official SPIFFE Docs &#8599;</a>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="breadcrumb">
+        <a href="index.html">Home</a><span class="sep">&gt;</span><span>Deployment</span>
+      </div>
+
+      <h1>Deployment Requirements and Guide</h1>
+      <p>Use this page to prepare your workstation for the demo scenarios in this repository and to understand what changes when you move from a lab setup to a production SPIRE deployment.</p>
+
+      <h2>Prerequisites</h2>
+      <p>To run the scenarios in this repository you need the following tools:</p>
+      <ul>
+        <li><strong>Podman and podman-compose</strong> for running every scenario stack in containers. Install guides: <a href="https://podman.io/get-started">Podman</a> and <a href="https://github.com/containers/podman-compose">podman-compose</a>.</li>
+        <li><strong>Go 1.24+</strong> for building scenario binaries and Go services. If you want to match the current repository tooling exactly, use the newest supported release from <a href="https://go.dev/dl/">go.dev</a>.</li>
+        <li><strong>Task</strong> from <a href="https://taskfile.dev/">taskfile.dev</a> for repository build automation.</li>
+        <li><strong>PowerShell</strong> for running the scenario scripts and local helper commands. Install guide: <a href="https://learn.microsoft.com/powershell/scripting/install/installing-powershell">PowerShell installation</a>.</li>
+      </ul>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Note</div>
+        <p>All scenarios in this repository run SPIRE inside containers. You do not need to install SPIRE locally on your host machine just to follow the demos.</p>
+      </div>
+
+      <div class="callout callout-warning">
+        <div class="callout-title">Common gotcha</div>
+        <p>Run only one scenario at a time. Container names, socket volumes, and host ports overlap between scenarios and will conflict if another environment is still running.</p>
+      </div>
+
+      <h2>SPIRE Server Requirements</h2>
+      <p>For a production deployment, plan for a SPIRE Server host with these baseline requirements:</p>
+      <ul>
+        <li><strong>Operating system:</strong> Linux is recommended for most deployments, though Windows is also supported in some environments.</li>
+        <li><strong>Agent connectivity:</strong> all SPIRE Agents must be able to reach the server over port <code>8081</code>.</li>
+        <li><strong>Persistent storage:</strong> keep the <code>data_dir</code> on durable storage so registration state and CA material survive restarts.</li>
+        <li><strong>Production database:</strong> use PostgreSQL or MySQL in production. SQLite is suitable for development and testing only.</li>
+        <li><strong>Compute resources:</strong> SPIRE is lightweight, but size CPU and memory for your agent count, signing load, and telemetry volume.</li>
+      </ul>
+
+      <h2>SPIRE Agent Requirements</h2>
+      <ul>
+        <li><strong>One agent per node:</strong> every node that runs workloads should also run a SPIRE Agent.</li>
+        <li><strong>Server connectivity:</strong> the agent must reach the SPIRE Server on the configured address and port.</li>
+        <li><strong>Node attestation material:</strong> each agent needs whatever credentials its attestor requires, such as a join token, TPM material, or cloud metadata.</li>
+        <li><strong>Workload API socket directory:</strong> local workloads need access to the Unix domain socket used for SVID delivery.</li>
+        <li><strong>Trust domain alignment:</strong> the agent must be configured for the same trust domain as the SPIRE Server.</li>
+      </ul>
+
+      <h2>Installation Methods</h2>
+      <ul>
+        <li><strong>Container images:</strong> <code>ghcr.io/spiffe/spire-server:1.15.0</code> and <code>ghcr.io/spiffe/spire-agent:1.15.0</code></li>
+        <li><strong>Binary releases:</strong> download official artifacts from the SPIRE GitHub releases page.</li>
+        <li><strong>Helm charts:</strong> use the Kubernetes deployment options when running SPIRE on clusters.</li>
+        <li><strong>Official guide:</strong> <a href="https://spiffe.io/docs/latest/deploying/install-server/">Install SPIRE Server</a></li>
+      </ul>
+
+      <h2>Quick Start with This Repository</h2>
+      <ol>
+        <li>Clone the repository.</li>
+        <li>Open a PowerShell terminal in the repository root.</li>
+        <li>Build the binaries with <code>task build</code>.</li>
+        <li>Start the first scenario with <code>.\bin\scenario-01-simple.exe up</code>.</li>
+        <li>Use <code>.\bin\scenario-01-simple.exe step</code> if you want guided mode with pauses between major actions.</li>
+      </ol>
+
+      <pre><code>git clone https://github.com/miroslav-matejovsky/spiffe-spire-demo.git
+cd spiffe-spire-demo
+
+task build
+.\bin\scenario-01-simple.exe up
+.\bin\scenario-01-simple.exe step
+.\bin\scenario-01-simple.exe down</code></pre>
+
+      <p>If you prefer to inspect a later scenario after the initial walkthrough, replace <code>scenario-01-simple.exe</code> with any other scenario binary in the <code>bin</code> directory.</p>
+
+      <h2>Troubleshooting Common Issues</h2>
+
+      <h3>Port conflicts</h3>
+      <p>If startup fails because a port is already in use, another scenario is probably still running. Stop it first, then retry.</p>
+      <div class="callout callout-warning">
+        <div class="callout-title">Common gotcha</div>
+        <p>Bring the previous environment down before starting a new one. If you use scenario scripts directly, run the matching <code>env-down.ps1</code> first.</p>
+      </div>
+
+      <h3>Podman or podman-compose not found</h3>
+      <p>Make sure both commands are installed and available on <code>PATH</code>. Open a new PowerShell session after installation so your shell picks up the updated environment.</p>
+
+      <h3>Workload API socket mount issues</h3>
+      <p>If workloads cannot fetch SVIDs, confirm the agent and workload containers share the same socket volume and that the socket path inside the workload matches <code>SPIFFE_ENDPOINT_SOCKET</code> or the application configuration.</p>
+
+      <h3>Stale SPIRE data volumes</h3>
+      <p>Old registration state, expired trust data, or half-finished lab runs can leave volumes in a bad state. Cleaning unused volumes often fixes repeated startup failures.</p>
+      <pre><code>podman volume prune</code></pre>
+
+      <h3>Container build failures</h3>
+      <p>If a scenario needs to build local Go binaries or images and the build fails, confirm your Go toolchain is new enough for the repository and that dependencies resolved cleanly with <code>task build</code>.</p>
+
+      <h3>Windows-specific problems</h3>
+      <ul>
+        <li>Use Windows path separators in PowerShell commands when working from the host.</li>
+        <li>Be careful with line endings if you edit scripts outside the repository defaults.</li>
+        <li>If bind mounts fail unexpectedly, verify the drive is shared correctly with your container runtime.</li>
+      </ul>
+
+      <h3>Connection refused on the Workload API</h3>
+      <p>This usually means the SPIRE Agent is not ready yet or the workload socket was not mounted into the application container. Wait for the agent to attest, then re-check the shared volume and socket path.</p>
+      <div class="callout callout-warning">
+        <div class="callout-title">Common gotcha</div>
+        <p>A Workload API error is often a startup ordering problem rather than an application bug. Make sure the agent has attested and created the socket before starting or testing workloads.</p>
+      </div>
+
+      <div class="page-nav">
+        <a href="concepts.html" class="prev">
+          <span class="label">Previous</span>
+          <span class="title">Core Concepts</span>
+        </a>
+        <a href="networking.html" class="next">
+          <span class="label">Next</span>
+          <span class="title">Networking &amp; Security</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
