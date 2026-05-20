@@ -23,6 +23,9 @@
       <a href="deployment.html" class="active">Deployment</a>
       <a href="networking.html">Networking &amp; Security</a>
       <a href="configuration.html">Configuration</a>
+      <div class="nav-section">Developer Guides</div>
+      <a href="developer-guide.html">Workload API Guide</a>
+      <a href="server-api-guide.html">Server API Guide</a>
       <div class="nav-section">Practice</div>
       <a href="scenarios.html">Hands-on Scenarios</a>
       <a href="production.html">Production Guide</a>
@@ -72,19 +75,19 @@
 
       <h2>SPIRE Agent Requirements</h2>
       <ul>
-        <li><strong>One agent per VM or physical machine:</strong> every VM or physical machine that runs workloads should also run a SPIRE Agent.</li>
+        <li><strong>One agent per VM or physical machine:</strong> every VM or physical machine that runs workloads should also run a SPIRE Agent <a href="https://spiffe.io/docs/latest/deploying/spire_agent/">[Agent config ref]</a>.</li>
         <li><strong>Server connectivity:</strong> outbound connectivity to the centralized SPIRE Server on port <code>8081</code>. The connection may traverse WAN, VPN, or restricted network segments, and SPIRE handles reconnection automatically.</li>
         <li><strong>Service management:</strong> on Windows machines, the agent runs as a Windows service. On Linux, it typically runs as a systemd service.</li>
-        <li><strong>Node attestation material:</strong> each agent needs whatever credentials its attestor requires, such as a join token, TPM material, or cloud metadata.</li>
-        <li><strong>Workload API endpoint:</strong> local workloads need access to the local Workload API endpoint, exposed as a Unix domain socket on Linux or a named pipe on Windows.</li>
-        <li><strong>Local SVID availability:</strong> the agent caches SVIDs locally, so workloads keep functioning during temporary server connectivity loss.</li>
+        <li><strong>Node attestation material:</strong> each agent needs whatever credentials its attestor requires, such as a join token, TPM material, or cloud metadata <a href="https://spiffe.io/docs/latest/spire-about/spire-concepts/#node-attestation">[Node attestation]</a>.</li>
+        <li><strong>Workload API endpoint:</strong> local workloads need access to the local Workload API endpoint, exposed as a Unix domain socket on Linux or a named pipe on Windows <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_Endpoint.md">[Workload endpoint spec]</a>.</li>
+        <li><strong>Local SVID availability:</strong> the agent caches SVIDs locally, so workloads keep functioning during temporary server connectivity loss <a href="https://spiffe.io/docs/latest/deploying/spire_agent/">[Agent config ref]</a>.</li>
         <li><strong>Trust domain alignment:</strong> the agent must be configured for the same trust domain as the SPIRE Server.</li>
       </ul>
 
       <h2>Installation Methods</h2>
       <ul>
         <li><strong>Container images:</strong> <code>ghcr.io/spiffe/spire-server:1.15.0</code> and <code>ghcr.io/spiffe/spire-agent:1.15.0</code></li>
-        <li><strong>Binary releases:</strong> download official artifacts from the SPIRE GitHub releases page. For VM and physical machine deployments, download SPIRE binaries from GitHub releases and install the agent as a system service. This is the most common pattern for Windows servers and Linux VMs outside of container orchestrators.</li>
+        <li><strong>Binary releases:</strong> download official artifacts from the SPIRE GitHub releases page. For VM and physical machine deployments, download SPIRE binaries from GitHub releases and install the agent as a system service. This is the most common pattern for Windows servers and Linux VMs outside of container orchestrators <a href="https://spiffe.io/docs/latest/try/getting-started-linux/">[Getting started]</a>.</li>
         <li><strong>Helm charts:</strong> use the Kubernetes deployment options for environments that use Kubernetes.</li>
         <li><strong>Official guide:</strong> <a href="https://spiffe.io/docs/latest/deploying/install-server/">Install SPIRE Server</a></li>
       </ul>
@@ -112,10 +115,10 @@ task build
       <ul>
         <li><strong>Download binaries:</strong> get the SPIRE Agent binary for Windows from the official GitHub releases page.</li>
         <li><strong>Create configuration directory:</strong> place the agent configuration in a dedicated path such as <code>C:\spire\conf\agent.conf</code>.</li>
-        <li><strong>Use named pipes for Workload API:</strong> configure <code>named_pipe_name</code> instead of <code>socket_path</code> on Windows.</li>
+        <li><strong>Use named pipes for Workload API:</strong> configure <code>named_pipe_name</code> instead of <code>socket_path</code> on Windows <a href="https://spiffe.io/docs/latest/deploying/spire_agent/">[Agent config ref]</a>.</li>
         <li><strong>Install as a service:</strong> register the agent as a Windows service with <code>sc.exe</code> or NSSM so it starts automatically.</li>
         <li><strong>Network path:</strong> make sure the machine has outbound access to the SPIRE Server on port <code>8081</code>.</li>
-        <li><strong>Bootstrap trust:</strong> provision the trust bundle before first startup so the agent can validate the centralized server.</li>
+        <li><strong>Bootstrap trust:</strong> provision the trust bundle before first startup so the agent can validate the centralized server <a href="https://spiffe.io/docs/latest/deploying/spire_agent/#server-attestation">[Server attestation]</a>.</li>
       </ul>
 
       <h2>Troubleshooting Common Issues</h2>
@@ -144,7 +147,7 @@ task build
       <p>Check firewall rules, VPN status, and DNS resolution for the configured server address. The agent retries automatically, so inspect logs for connection timeout or TLS handshake errors while the path is unavailable.</p>
 
       <h3>SVIDs expire during server outage</h3>
-      <p>Set <code>availability_target</code> in the agent configuration to at least <code>24h</code>. The agent will pre-rotate SVIDs more aggressively so workloads can ride through expected downtime windows.</p>
+      <p>Set <code>availability_target</code> in the agent configuration to at least <code>24h</code>. The agent will pre-rotate SVIDs more aggressively so workloads can ride through expected downtime windows <a href="https://spiffe.io/docs/latest/deploying/spire_agent/#availability-target">[Availability target]</a>.</p>
 
       <h3>Windows-specific problems</h3>
       <ul>

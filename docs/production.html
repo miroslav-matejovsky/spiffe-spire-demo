@@ -23,6 +23,9 @@
       <a href="deployment.html">Deployment</a>
       <a href="networking.html">Networking &amp; Security</a>
       <a href="configuration.html">Configuration</a>
+      <div class="nav-section">Developer Guides</div>
+      <a href="developer-guide.html">Workload API Guide</a>
+      <a href="server-api-guide.html">Server API Guide</a>
       <div class="nav-section">Practice</div>
       <a href="scenarios.html">Hands-on Scenarios</a>
       <a href="production.html" class="active">Production Guide</a>
@@ -111,7 +114,7 @@
       <h2>Database</h2>
       <div class="callout callout-danger">
         <div class="callout-title">Do not use SQLite in production</div>
-        <p>SQLite is fine for demos and single-node labs. Production deployments need a networked SQL backend so multiple SPIRE servers can share state and survive host failures.</p>
+        <p>SQLite is fine for demos and single-node labs. Production deployments need a networked SQL backend so multiple SPIRE servers can share state and survive host failures <a href="https://spiffe.io/docs/latest/deploying/spire_server/">[Server config ref]</a>.</p>
       </div>
       <ul>
         <li>PostgreSQL is the usual recommendation for production SPIRE deployments.</li>
@@ -134,8 +137,8 @@
         <p>The server signing key is extremely sensitive. If it is compromised, an attacker can forge workload and agent identities across your trust domain.</p>
       </div>
       <ul>
-        <li><code>disk</code>: minimum acceptable production baseline because keys survive restarts.</li>
-        <li><code>aws_kms</code>: HSM-backed option and strong default for AWS deployments.</li>
+        <li><code>disk</code>: minimum acceptable production baseline because keys survive restarts <a href="https://spiffe.io/docs/latest/deploying/spire_server/">[Server key manager ref]</a>.</li>
+        <li><code>aws_kms</code>: HSM-backed option and strong default for AWS deployments <a href="https://spiffe.io/docs/latest/deploying/spire_server/">[Server key manager ref]</a>.</li>
         <li><code>azure_key_vault</code>: Azure Managed HSM integration is available in SPIRE v1.15.0.</li>
         <li><code>vault</code>: HashiCorp Vault Key Manager is new in SPIRE v1.15.0 and fits centralized secrets operations.</li>
       </ul>
@@ -159,7 +162,7 @@
       <h2>Secure Bootstrap</h2>
       <div class="callout callout-danger">
         <div class="callout-title">Never use insecure_bootstrap=true in production</div>
-        <p>Bootstrap trust must come from a secure channel. Otherwise, a man-in-the-middle can impersonate your SPIRE server and own the identity system from first contact.</p>
+        <p>Bootstrap trust must come from a secure channel. Otherwise, a man-in-the-middle can impersonate your SPIRE server and own the identity system from first contact <a href="https://spiffe.io/docs/latest/deploying/spire_agent/#server-attestation">[Server attestation]</a>.</p>
       </div>
       <ul>
         <li>Distribute the trust bundle with secure file copy or configuration management.</li>
@@ -171,7 +174,7 @@ openssl req -x509 -new -key spire-root-ca.key -sha256 -days 3650 -out spire-root
 
       <h2>Node Attestation Best Practices</h2>
       <ul>
-        <li>For VM and physical machine environments, use <code>x509pop</code> (certificate-based) or <code>tpm_devid</code> (TPM hardware) for durable machine-bound identity. These work without cloud-provider metadata.</li>
+        <li>For VM and physical machine environments, use <code>x509pop</code> (certificate-based) or <code>tpm_devid</code> (TPM hardware) for durable machine-bound identity. These work without cloud-provider metadata <a href="https://spiffe.io/docs/latest/spire-about/spire-concepts/#node-attestation">[Node attestation]</a>.</li>
         <li>Join tokens work well for initial bootstrapping of new machines but are single-use.</li>
         <li>For agents running in cloud VMs, platform-native attestors like <code>aws_iid</code> or <code>gcp_iit</code> are also available, and <code>k8s_psat</code> fits Kubernetes-specific deployments.</li>
         <li>Security note: the <code>aws_iid</code> PKCS7 path had a critical CVE fixed in v1.14.6, so keep attestation plugins current.</li>
@@ -179,9 +182,9 @@ openssl req -x509 -new -key spire-root-ca.key -sha256 -days 3650 -out spire-root
 
       <h2>High Availability</h2>
       <ul>
-        <li>Run multiple SPIRE servers behind stable addressing with shared PostgreSQL or MySQL.</li>
+        <li>Run multiple SPIRE servers behind stable addressing with shared PostgreSQL or MySQL <a href="https://spiffe.io/docs/latest/deploying/spire_server/">[Server config ref]</a>.</li>
         <li>Use nested SPIRE when you need geographic distribution or delegated operational control.</li>
-        <li>For agents on remote machines with non-stable connectivity, set <code>availability_target</code> to at least <code>24h</code>. This ensures the agent pre-rotates SVIDs to cover server outage windows. Combined with <code>disk</code> KeyManager on the agent, SVIDs and keys survive both agent restarts and server connectivity losses.</li>
+        <li>For agents on remote machines with non-stable connectivity, set <code>availability_target</code> to at least <code>24h</code>. This ensures the agent pre-rotates SVIDs to cover server outage windows. Combined with <code>disk</code> KeyManager on the agent, SVIDs and keys survive both agent restarts and server connectivity losses <a href="https://spiffe.io/docs/latest/deploying/spire_agent/#availability-target">[Availability target]</a>.</li>
       </ul>
 
       <h2>SVID TTL Tuning</h2>
@@ -195,8 +198,8 @@ openssl req -x509 -new -key spire-root-ca.key -sha256 -days 3650 -out spire-root
       <h2>Agent Resilience for Remote Machines</h2>
       <p>Agents on VMs and physical machines in remote sites may lose connectivity to the centralized SPIRE server. Plan for local survival instead of assuming stable links.</p>
       <ul>
-        <li><code>availability_target = "48h"</code> tells the agent to pre-rotate SVIDs so workloads can survive a 48-hour server outage window.</li>
-        <li><code>KeyManager "disk"</code> keeps keys available across agent restarts.</li>
+        <li><code>availability_target = "48h"</code> tells the agent to pre-rotate SVIDs so workloads can survive a 48-hour server outage window <a href="https://spiffe.io/docs/latest/deploying/spire_agent/#availability-target">[Availability target]</a>.</li>
+        <li><code>KeyManager "disk"</code> keeps keys available across agent restarts <a href="https://spiffe.io/docs/latest/deploying/spire_agent/">[Agent config ref]</a>.</li>
         <li>Place <code>data_dir</code> on persistent storage so agent state survives machine reboots.</li>
         <li>Agent reconnection is automatic with exponential backoff.</li>
         <li>Workloads continue using cached SVIDs during server outages.</li>
@@ -206,7 +209,7 @@ openssl req -x509 -new -key spire-root-ca.key -sha256 -days 3650 -out spire-root
       <h2>Windows Agent Operations</h2>
       <ul>
         <li>Install SPIRE agent as a Windows service.</li>
-        <li>Use <code>named_pipe_name</code> for the Workload API instead of a Unix socket.</li>
+        <li>Use <code>named_pipe_name</code> for the Workload API instead of a Unix socket <a href="https://spiffe.io/docs/latest/deploying/spire_agent/">[Agent config ref]</a>.</li>
         <li>Put the agent data directory on persistent local disk such as <code>C:\spire\data</code>.</li>
         <li>Configure <code>log_format = "json"</code> and forward logs with your standard aggregation tool.</li>
         <li><code>x509pop</code> works well with machine certificates issued by Active Directory Certificate Services or another enterprise PKI.</li>
