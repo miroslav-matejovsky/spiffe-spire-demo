@@ -20,4 +20,9 @@
 // Context.ComposeCmd returns a podman-compose command prefix with the -f flag
 // pointing to the scenario compose.yml. Scenarios use it in suggestion text so
 // that pasted commands work from wherever the user invoked the binary.
+//
+// Context.Src and Context.RepoSrc create Source references for VS Code-clickable
+// file links. Src builds paths relative to the scenario directory (for config
+// files, compose.yml, Containerfiles). RepoSrc builds paths relative to the
+// repository root (for Go source code, dashboard, internal packages).
 package scenario

@@ -23,6 +23,11 @@ func up(ctx *scenario.Context) error {
 			"It opens gRPC connection to SPIRE Server API and reads agents, entries, and bundles.\n" +
 			"Multi-stage build compiles Go binary first, then copies only binary into small runtime image.\n" +
 			"Small image keeps demo simple and shows how external tools can package SPIRE API clients.",
+		Sources: []step.Source{
+			ctx.RepoSrc("dashboard/Containerfile", 0, "multi-stage build for dashboard"),
+			ctx.RepoSrc("cmd/dashboard/main.go", 0, "dashboard entry point and gRPC setup"),
+			ctx.RepoSrc("cmd/dashboard/handlers.go", 0, "HTTP handlers for SPIRE API data"),
+		},
 		Action: func() error {
 			return podman.BuildDashboard(ctx.RepoRoot, ctx.Log)
 		},
@@ -41,6 +46,11 @@ func up(ctx *scenario.Context) error {
 			"New part in scenario 02 is management API socket at /tmp/spire-server/private/api.sock.\n" +
 			"scenarios/02-dashboard/compose.yml mounts volume spire-server-socket into server at that path.\n" +
 			"Same volume will later be mounted into dashboard so both containers see same Unix socket.",
+		Sources: []step.Source{
+			ctx.Src("compose.yml", 10, "spire-server-socket volume mount"),
+			ctx.Src("compose.yml", 22, "dashboard service shares same volume"),
+			ctx.Src("spire/server/server.conf", 4, "socket_path for API"),
+		},
 		Action: func() error {
 			return ctx.Compose.Up("spire-server")
 		},
@@ -123,6 +133,11 @@ func up(ctx *scenario.Context) error {
 			"It mounts same spire-server-socket volume, so /tmp/spire-server/private/api.sock appears inside dashboard container too.\n" +
 			"Go code in dashboard opens gRPC client on Unix socket, calls SPIRE Server API, then renders HTML.\n" +
 			"It does not modify SPIRE state in demo. It only reads and presents it in browser.",
+		Sources: []step.Source{
+			ctx.Src("compose.yml", 31, "dashboard mounts spire-server-socket"),
+			ctx.RepoSrc("cmd/dashboard/main.go", 0, "gRPC connection to SPIRE API"),
+			ctx.RepoSrc("cmd/dashboard/handlers.go", 0, "handlers query agents, entries, bundles"),
+		},
 		Action: func() error {
 			if err := ctx.Compose.UpNoBuild("dashboard"); err != nil {
 				return err

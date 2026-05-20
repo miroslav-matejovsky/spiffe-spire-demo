@@ -7,6 +7,12 @@
 //   - Action: a function that performs the actual work (start container, etc.)
 //   - Observe: educational text shown AFTER the action succeeds, explaining
 //     what SPIRE did, what to inspect, and suggesting verification commands
+//   - Sources: list of codebase files relevant to the step, printed as
+//     VS Code-clickable path:line links after the Explain text
+//
+// Source links let developers click file references in VS Code terminal to
+// jump directly to the relevant config or Go source during the scenario.
+// Each Source has a Path (absolute), Line (0 for whole file), and Label.
 //
 // The Runner supports two modes:
 //   - Auto mode (default): prints Explain, executes Action, prints Observe,

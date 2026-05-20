@@ -31,6 +31,12 @@ func up(ctx *scenario.Context) error {
 			"Agent-1 will use join_token, like cloud VM or dev box with no hardware root.\n" +
 			"Agent-2 will use x509pop with DevID cert, like bare metal or TPM-backed host.\n" +
 			"Real production fleets often run both while stronger hardware identity rolls out.",
+		Sources: []step.Source{
+			ctx.Src("spire/server/server.conf", 18, "NodeAttestor join_token"),
+			ctx.Src("spire/server/server.conf", 21, "NodeAttestor x509pop with CA bundle"),
+			ctx.Src("spire/agent-2/agent.conf", 12, "x509pop with cert and key paths"),
+			ctx.RepoSrc("internal/certs/certs.go", 0, "certificate generation helpers"),
+		},
 		Action: func() error {
 			if certs.FilesExist(agent2CertPath, agent2KeyPath, serverCaPath) {
 				ctx.Log.Info("DevID credentials already exist, skipping provisioning.")
@@ -84,6 +90,11 @@ func up(ctx *scenario.Context) error {
 			"Early start matters because first server and agent events emit useful bootstrap metrics.\n" +
 			"Production teams use telemetry to spot failed attestation, slow issuance, and outages.\n" +
 			"Running both shows old and new monitoring styles side by side.",
+		Sources: []step.Source{
+			ctx.Src("compose.yml", 4, "graphite-statsd service"),
+			ctx.Src("compose.yml", 13, "prometheus service"),
+			ctx.Src("prometheus/prometheus.yml", 0, "Prometheus scrape targets"),
+		},
 		Action: func() error {
 			return ctx.Compose.Up("graphite-statsd", "prometheus")
 		},
@@ -102,6 +113,12 @@ func up(ctx *scenario.Context) error {
 			"Config loads two NodeAttestor plugins: join_token and x509pop.\n" +
 			"Telemetry is enabled so attestation and issuance flow into monitoring backends.\n" +
 			"One server can accept mixed node identity sources without splitting trust domain.",
+		Sources: []step.Source{
+			ctx.Src("spire/server/server.conf", 18, "NodeAttestor join_token"),
+			ctx.Src("spire/server/server.conf", 21, "NodeAttestor x509pop"),
+			ctx.Src("spire/server/server.conf", 31, "telemetry block: Prometheus + StatsD"),
+			ctx.Src("compose.yml", 23, "spire-server service"),
+		},
 		Action: func() error {
 			return ctx.Compose.Up("spire-server")
 		},
@@ -136,6 +153,12 @@ func up(ctx *scenario.Context) error {
 			"Think cloud VM, ephemeral lab host, or early environment before hardware rollout.\n" +
 			"Server mints one-time token, agent presents it, then long-term SPIFFE identity takes over.\n" +
 			"After attestation, workload API on agent-1 will serve one workload pool.",
+		Sources: []step.Source{
+			ctx.Src("spire/agent-1/agent.conf", 8, "insecure_bootstrap = true"),
+			ctx.Src("spire/agent-1/agent.conf", 12, "NodeAttestor join_token"),
+			ctx.Src("spire/agent-1/agent.conf", 23, "agent-1 telemetry block"),
+			ctx.Src("compose.yml", 34, "spire-agent-1 service"),
+		},
 		Action: func() error {
 			token, err := spirectl.GenerateToken(ctx.Compose, "spire-server", "spiffe://mirmat.org/myagent", ctx.Log)
 			if err != nil {
@@ -162,6 +185,11 @@ func up(ctx *scenario.Context) error {
 			"Here DevID cert stands in for hardware-backed identity from TPM or secure element.\n" +
 			"Server validates chain to trusted CA instead of checking shared secret token.\n" +
 			"Many production bare-metal or appliance nodes use stronger path like this.",
+		Sources: []step.Source{
+			ctx.Src("spire/agent-2/agent.conf", 12, "NodeAttestor x509pop"),
+			ctx.Src("spire/agent-2/agent.conf", 27, "agent-2 telemetry block"),
+			ctx.Src("compose.yml", 56, "spire-agent-2 service"),
+		},
 		Action: func() error {
 			return ctx.Compose.Up("spire-agent-2")
 		},
@@ -200,6 +228,10 @@ func up(ctx *scenario.Context) error {
 			"Each workload mounts only its local Workload API socket, not server API.\n" +
 			"SPIFFE design keeps workload identity close to node agent that already attested.\n" +
 			"Separate agents let teams isolate pools, zones, or hardware classes.",
+		Sources: []step.Source{
+			ctx.Src("compose.yml", 46, "workload-1 with agent-1 PID namespace"),
+			ctx.Src("compose.yml", 68, "workload-2 with agent-2 PID namespace"),
+		},
 		Action: func() error {
 			return ctx.Compose.Up("workload-1", "workload-2")
 		},
@@ -218,6 +250,11 @@ func up(ctx *scenario.Context) error {
 			"Parent ID says which attested agent may vouch for workload.\n" +
 			"workload-1 uses agent-1 SPIFFE ID, while workload-2 uses agent-2 SPIFFE ID.\n" +
 			"Production systems use parent IDs to route identity through correct node pool.",
+		Sources: []step.Source{
+			ctx.RepoSrc("internal/spirectl/spirectl.go", 97, "CreateEntry implementation"),
+			ctx.Src("compose.yml", 51, "workload-1 PID namespace sharing"),
+			ctx.Src("compose.yml", 76, "workload-2 PID namespace sharing"),
+		},
 		Action: func() error {
 			agent1ID, err := spirectl.GetAgentIDByType(ctx.Compose, "spire-server", "join_token", ctx.Log)
 			if err != nil {

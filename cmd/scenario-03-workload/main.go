@@ -32,6 +32,10 @@ func up(ctx *scenario.Context) error {
 			"It talks to SPIRE server API and shows agents, entries, bundles, and status.",
 			"We build image first so later browser checks are ready when stack comes up.",
 		),
+		Sources: []step.Source{
+			ctx.RepoSrc("dashboard/Containerfile", 0, "multi-stage dashboard build"),
+			ctx.RepoSrc("cmd/dashboard/handlers.go", 0, "HTTP handlers for API data"),
+		},
 		Action: func() error {
 			return podman.BuildDashboard(ctx.RepoRoot, ctx.Log)
 		},
@@ -53,6 +57,11 @@ func up(ctx *scenario.Context) error {
 			"Agents ask server which workloads on their node may receive identities.",
 			"Server starts empty. No workload policy exists yet.",
 		),
+		Sources: []step.Source{
+			ctx.Src("spire/server/server.conf", 5, "trust_domain = mirmat.org"),
+			ctx.Src("spire/server/server.conf", 17, "NodeAttestor join_token"),
+			ctx.Src("compose.yml", 4, "spire-server service"),
+		},
 		Action: func() error {
 			return ctx.Compose.Up("spire-server")
 		},
@@ -97,6 +106,11 @@ func up(ctx *scenario.Context) error {
 			"Workloads never talk to server directly. They ask local agent over this socket.",
 			"Join token lets server attest this agent as trusted node in demo.",
 		),
+		Sources: []step.Source{
+			ctx.Src("spire/agent/agent.conf", 6, "socket_path for Workload API"),
+			ctx.Src("spire/agent/agent.conf", 18, "WorkloadAttestor unix plugin"),
+			ctx.Src("compose.yml", 19, "shared-socket volume mount on agent"),
+		},
 		Action: func() error {
 			token, err := spirectl.GenerateToken(ctx.Compose, "spire-server", "spiffe://mirmat.org/myagent", ctx.Log)
 			if err != nil {
@@ -152,6 +166,11 @@ func up(ctx *scenario.Context) error {
 			"Workload runs spire-agent api watch, which keeps asking for SVIDs and prints updates to logs.",
 			"Socket access alone is not enough. Matching registration policy is still required.",
 		),
+		Sources: []step.Source{
+			ctx.Src("compose.yml", 33, "workload service definition"),
+			ctx.Src("compose.yml", 38, "pid namespace sharing with agent"),
+			ctx.Src("compose.yml", 40, "shared-socket volume on workload"),
+		},
 		Action: func() error {
 			if err := ctx.Compose.UpNoBuild("workload"); err != nil {
 				return err
@@ -222,6 +241,10 @@ func register(ctx *scenario.Context) error {
 			"In this scenario workload runs as root, so unix attestor will produce that selector.",
 			"Until entry exists, workload has socket access but no authority to get identity.",
 		),
+		Sources: []step.Source{
+			ctx.RepoSrc("internal/spirectl/spirectl.go", 97, "CreateEntry implementation"),
+			ctx.Src("compose.yml", 38, "workload shares agent PID namespace"),
+		},
 		Action: func() error {
 			agentID, err := spirectl.GetAgentID(ctx.Compose, "spire-server", ctx.Log)
 			if err != nil {

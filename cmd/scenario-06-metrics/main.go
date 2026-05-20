@@ -31,6 +31,11 @@ func up(ctx *scenario.Context) error {
 			"Server trusts CA file in spire/server/agent-cacert.pem, then checks agent leaf cert.\n" +
 			"Like scenario 04, we mint demo CA, agent certificate, and private key before startup.\n" +
 			"Without these files, agent cannot prove key possession during node attestation.",
+		Sources: []step.Source{
+			ctx.Src("spire/server/server.conf", 18, "NodeAttestor x509pop with CA bundle"),
+			ctx.Src("spire/agent/agent.conf", 12, "x509pop with cert and key paths"),
+			ctx.RepoSrc("internal/certs/certs.go", 0, "certificate generation helpers"),
+		},
 		Action: func() error {
 			if certs.FilesExist(serverCaPath, agentCertPath, agentKeyPath) {
 				ctx.Log.Info("Certificates already exist, skipping provisioning.")
@@ -85,6 +90,13 @@ func up(ctx *scenario.Context) error {
 			"StatsD is push based: SPIRE server sends counters and gauges to graphite-statsd:8125.\n" +
 			"Graphite stores pushed series, while Prometheus stores scraped time series for queries.\n" +
 			"Same control plane now teaches both push and pull telemetry models.",
+		Sources: []step.Source{
+			ctx.Src("spire/server/server.conf", 28, "server telemetry: Prometheus + StatsD"),
+			ctx.Src("spire/agent/agent.conf", 29, "agent telemetry: Prometheus + StatsD"),
+			ctx.Src("prometheus/prometheus.yml", 0, "Prometheus scrape configuration"),
+			ctx.Src("compose.yml", 4, "graphite-statsd service"),
+			ctx.Src("compose.yml", 12, "prometheus service"),
+		},
 		Action: func() error {
 			return ctx.Compose.Up("graphite-statsd", "prometheus", "spire-server", "spire-agent")
 		},

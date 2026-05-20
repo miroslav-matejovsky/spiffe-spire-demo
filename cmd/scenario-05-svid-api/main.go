@@ -27,6 +27,13 @@ func up(ctx *scenario.Context) error {
 			"svid-server is Go HTTPS service using workloadapi.NewX509Source for server certs.\n" +
 			"svid-client is Go HTTP client using same API for client certs.\n" +
 			"Neither service reads PEM files from disk. go-spiffe/v2 fetches and rotates SVIDs at runtime.",
+		Sources: []step.Source{
+			ctx.Src("server/Containerfile", 10, "UID 10001 for svid-server"),
+			ctx.Src("client/Containerfile", 10, "UID 10002 for svid-client"),
+			ctx.RepoSrc("cmd/svid-server/main.go", 24, "workloadapi.NewX509Source"),
+			ctx.RepoSrc("cmd/svid-client/main.go", 25, "workloadapi.NewX509Source"),
+			ctx.RepoSrc("dashboard/Containerfile", 0, "dashboard multi-stage build"),
+		},
 		Action: func() error {
 			serverCf := filepath.Join(ctx.ScenarioDir, "server", "Containerfile")
 			clientCf := filepath.Join(ctx.ScenarioDir, "client", "Containerfile")
@@ -54,6 +61,11 @@ func up(ctx *scenario.Context) error {
 			"It stores registration entries that bind workloads to SPIFFE IDs.\n" +
 			"Later it will issue X.509 SVIDs for svid-server and svid-client.\n" +
 			"Agent and dashboard both depend on this control plane.",
+		Sources: []step.Source{
+			ctx.Src("spire/server/server.conf", 5, "trust_domain = mirmat.org"),
+			ctx.Src("spire/server/server.conf", 17, "NodeAttestor join_token"),
+			ctx.Src("compose.yml", 4, "spire-server service"),
+		},
 		Action: func() error {
 			return ctx.Compose.Up("spire-server")
 		},
@@ -87,6 +99,12 @@ func up(ctx *scenario.Context) error {
 			"Compose shares workload-socket volume among spire-agent, svid-server, and svid-client.\n" +
 			"Both Go apps call unix:///opt/spire/sockets/workload_api.sock through workloadapi.NewX509Source.\n" +
 			"Agent uses join token once, then serves SVID and bundle updates locally.",
+		Sources: []step.Source{
+			ctx.Src("spire/agent/agent.conf", 6, "socket_path for Workload API"),
+			ctx.Src("compose.yml", 20, "workload-socket volume on agent"),
+			ctx.Src("compose.yml", 32, "workload-socket volume on svid-server"),
+			ctx.Src("compose.yml", 45, "workload-socket volume on svid-client"),
+		},
 		Action: func() error {
 			token, err := spirectl.GenerateToken(ctx.Compose, "spire-server", "spiffe://mirmat.org/myagent", ctx.Log)
 			if err != nil {
@@ -130,6 +148,11 @@ func up(ctx *scenario.Context) error {
 			"svid-client runs as UID 10002, so unix:uid:10002 maps to spiffe://mirmat.org/svid-client.\n" +
 			"Different UIDs mean different SVIDs and clean authorization boundary.\n" +
 			"Same socket and same agent still yield per-process identity.",
+		Sources: []step.Source{
+			ctx.Src("server/Containerfile", 12, "USER 10001 for svid-server"),
+			ctx.Src("client/Containerfile", 12, "USER 10002 for svid-client"),
+			ctx.RepoSrc("internal/spirectl/spirectl.go", 97, "CreateEntry implementation"),
+		},
 		Action: func() error {
 			agentID, err := spirectl.GetAgentID(ctx.Compose, "spire-server", ctx.Log)
 			if err != nil {
@@ -162,6 +185,13 @@ func up(ctx *scenario.Context) error {
 			"5) On connect, both sides present X.509 SVIDs and verify peer against trust bundle.\n" +
 			"6) Server reads client SPIFFE ID from peer cert URI SAN after handshake.\n" +
 			"7) X509Source watches updates, so certificate rotation can happen without app restart.",
+		Sources: []step.Source{
+			ctx.RepoSrc("cmd/svid-server/main.go", 24, "NewX509Source connects to Workload API"),
+			ctx.RepoSrc("cmd/svid-server/main.go", 47, "MTLSServerConfig with AuthorizeMemberOf"),
+			ctx.RepoSrc("cmd/svid-server/main.go", 54, "extract client SPIFFE ID from peer cert"),
+			ctx.RepoSrc("cmd/svid-client/main.go", 25, "NewX509Source for client identity"),
+			ctx.RepoSrc("cmd/svid-client/main.go", 43, "MTLSClientConfig for mTLS dial"),
+		},
 		Action: func() error {
 			if err := ctx.Compose.UpNoBuild("svid-server"); err != nil {
 				return err

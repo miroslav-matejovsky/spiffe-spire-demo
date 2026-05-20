@@ -33,6 +33,11 @@ func up(ctx *scenario.Context) error {
 			"We build small PKI: CA signs agent certificate, and SPIRE server trusts only CA.\n" +
 			"Server gets CA certificate as trust anchor. Agent gets certificate plus private key.\n" +
 			"In real TPM flow, private key is hardware-bound and non-extractable, but trust model is same.",
+		Sources: []step.Source{
+			ctx.Src("spire/server/server.conf", 19, "NodeAttestor x509pop with ca_bundle_path"),
+			ctx.Src("spire/agent/agent.conf", 12, "NodeAttestor x509pop with cert and key paths"),
+			ctx.RepoSrc("internal/certs/certs.go", 0, "certificate generation helpers"),
+		},
 		Action: func() error {
 			if certs.FilesExist(serverCaPath, agentCertPath, agentKeyPath) {
 				ctx.Log.Info("Certificates already exist, skipping provisioning.")
@@ -93,6 +98,12 @@ func up(ctx *scenario.Context) error {
 			"Agent config enables x509pop and points to devid-cert.pem plus devid-key.pem.\n" +
 			"Both containers can start together because agent already has long-lived identity material.\n" +
 			"Real TPM attestation swaps file-based key for hardware-backed key, but flow is similar.",
+		Sources: []step.Source{
+			ctx.Src("spire/server/server.conf", 19, "x509pop NodeAttestor with CA bundle"),
+			ctx.Src("spire/agent/agent.conf", 12, "x509pop with key and cert paths"),
+			ctx.Src("compose.yml", 4, "spire-server service"),
+			ctx.Src("compose.yml", 13, "spire-agent service"),
+		},
 		Action: func() error {
 			return ctx.Compose.Up("spire-server", "spire-agent")
 		},

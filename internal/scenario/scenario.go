@@ -57,6 +57,26 @@ func (ctx *Context) ComposeCmd() string {
 	return fmt.Sprintf("podman-compose -f %s", composePath)
 }
 
+// Src creates a Source reference to a file relative to the scenario directory.
+// Use for config files, compose.yml, Containerfiles, and other scenario-local files.
+func (ctx *Context) Src(relPath string, line int, label string) step.Source {
+	return step.Source{
+		Path:  filepath.Join(ctx.ScenarioDir, filepath.FromSlash(relPath)),
+		Line:  line,
+		Label: label,
+	}
+}
+
+// RepoSrc creates a Source reference to a file relative to the repository root.
+// Use for Go source code, dashboard files, and shared internal packages.
+func (ctx *Context) RepoSrc(relPath string, line int, label string) step.Source {
+	return step.Source{
+		Path:  filepath.Join(ctx.RepoRoot, filepath.FromSlash(relPath)),
+		Line:  line,
+		Label: label,
+	}
+}
+
 // WaitForDashboard polls a dashboard health URL until it responds 200.
 // Warns but does not error on timeout.
 func (ctx *Context) WaitForDashboard(url string) {

@@ -22,7 +22,7 @@ services:
 
   spire-server:
     container_name: production-spire-server
-    image: ghcr.io/spiffe/spire-server:1.14.5
+    image: ghcr.io/spiffe/spire-server:1.15.0
     hostname: spire-server
     volumes:
       - ./spire/server:/opt/spire/conf/server
@@ -33,7 +33,7 @@ services:
 
   spire-agent-1:
     container_name: production-spire-agent-1
-    image: ghcr.io/spiffe/spire-agent:1.14.5
+    image: ghcr.io/spiffe/spire-agent:1.15.0
     hostname: spire-agent-1
     depends_on: ["spire-server"]
     volumes:
@@ -45,7 +45,7 @@ services:
 
   workload-1:
     container_name: production-workload-1
-    image: ghcr.io/spiffe/spire-agent:1.14.5
+    image: ghcr.io/spiffe/spire-agent:1.15.0
     hostname: workload-1
     depends_on: ["spire-agent-1"]
     pid: "container:production-spire-agent-1"
@@ -55,7 +55,7 @@ services:
 
   spire-agent-2:
     container_name: production-spire-agent-2
-    image: ghcr.io/spiffe/spire-agent:1.14.5
+    image: ghcr.io/spiffe/spire-agent:1.15.0
     hostname: spire-agent-2
     depends_on: ["spire-server"]
     volumes:
@@ -67,7 +67,7 @@ services:
 
   workload-2:
     container_name: production-workload-2
-    image: ghcr.io/spiffe/spire-agent:1.14.5
+    image: ghcr.io/spiffe/spire-agent:1.15.0
     hostname: workload-2
     depends_on: ["spire-agent-2"]
     pid: "container:production-spire-agent-2"

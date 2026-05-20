@@ -27,6 +27,12 @@ func up(ctx *scenario.Context) error {
 			"sets root for every SPIFFE ID, like spiffe://mirmat.org/...\n" +
 			"Same file binds server on port 8081, uses DataStore \"sql\" with SQLite,\n" +
 			"and enables NodeAttestor \"join_token\" for first agent bootstrap.",
+		Sources: []step.Source{
+			ctx.Src("spire/server/server.conf", 5, "trust_domain = mirmat.org"),
+			ctx.Src("spire/server/server.conf", 3, "bind_port = 8081"),
+			ctx.Src("spire/server/server.conf", 11, "DataStore and NodeAttestor plugins"),
+			ctx.Src("compose.yml", 4, "spire-server service definition"),
+		},
 		Action: func() error {
 			return ctx.Compose.Up("spire-server")
 		},
@@ -46,6 +52,9 @@ func up(ctx *scenario.Context) error {
 			"Server still must load plugins from server.conf, open SQLite datastore,\n" +
 			"create or load signing keys with KeyManager \"memory\", and build CA state.\n" +
 			"Until healthcheck passes, server cannot sign SVIDs or accept agents.",
+		Sources: []step.Source{
+			ctx.Src("spire/server/server.conf", 20, "KeyManager memory plugin"),
+		},
 		Action: func() error {
 			return spirectl.Healthcheck(ctx.Compose, "spire-server", ctx.Log)
 		},
@@ -87,6 +96,13 @@ func up(ctx *scenario.Context) error {
 			"and server_port = \"8081\" point at server, while trust_domain must match\n" +
 			"mirmat.org. socket_path = \"/opt/spire/sockets/workload_api.sock\" exposes\n" +
 			"Workload API. insecure_bootstrap = true keeps first demo simple only.",
+		Sources: []step.Source{
+			ctx.Src("spire/agent/agent.conf", 4, "server_address = spire-server"),
+			ctx.Src("spire/agent/agent.conf", 6, "socket_path for Workload API"),
+			ctx.Src("spire/agent/agent.conf", 8, "insecure_bootstrap = true"),
+			ctx.Src("spire/agent/agent.conf", 18, "WorkloadAttestor unix plugin"),
+			ctx.Src("compose.yml", 12, "spire-agent service definition"),
+		},
 		Action: func() error {
 			podman.RemoveContainer(agentContainer, ctx.Log)
 			return ctx.Compose.RunDetached(agentContainer, "spire-agent",

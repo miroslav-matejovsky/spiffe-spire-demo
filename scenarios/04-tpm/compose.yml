@@ -3,7 +3,7 @@ name: tpm
 services:
   spire-server:
     container_name: tpm-spire-server
-    image: ghcr.io/spiffe/spire-server:1.14.5
+    image: ghcr.io/spiffe/spire-server:1.15.0
     hostname: spire-server
     volumes:
       - ./spire/server:/opt/spire/conf/server
@@ -12,7 +12,7 @@ services:
 
   spire-agent:
     container_name: tpm-spire-agent
-    image: ghcr.io/spiffe/spire-agent:1.14.5
+    image: ghcr.io/spiffe/spire-agent:1.15.0
     hostname: spire-agent
     depends_on: ["spire-server"]
     volumes:

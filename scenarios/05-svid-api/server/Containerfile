@@ -6,7 +6,7 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -o /svid-server ./cmd/svid-server
 
-FROM alpine:3.21
+FROM alpine:3.23
 RUN apk add --no-cache ca-certificates && adduser -D -u 10001 appuser
 COPY --from=builder /svid-server /usr/local/bin/svid-server
 USER 10001
