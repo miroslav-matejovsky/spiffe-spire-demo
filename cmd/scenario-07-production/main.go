@@ -68,8 +68,7 @@ func up(ctx *scenario.Context) error {
 			"It calls SPIRE server API and shows agents, entries, and bundle in one UI.\n" +
 			"We build image now so later startup stays quick and repeatable.",
 		Action: func() error {
-			containerfile := filepath.Join(ctx.RepoRoot, "dashboard", "Containerfile")
-			return podman.Build("spiffe-spire-demo-dashboard:local", containerfile, ctx.RepoRoot, ctx.Log)
+			return podman.BuildDashboard(ctx.RepoRoot, ctx.Log)
 		},
 		Observe: "Dashboard image ready.\n" +
 			"Later step will start container from local image with no extra build wait.\n" +
@@ -229,11 +228,13 @@ func up(ctx *scenario.Context) error {
 				return fmt.Errorf("no x509pop agent found: %w", err)
 			}
 			if err := spirectl.CreateEntry(ctx.Compose, "spire-server",
-				"spiffe://mirmat.org/workload-1", agent1ID, "unix:uid:0", ctx.Log); err != nil {
+				"spiffe://mirmat.org/workload-1", agent1ID, "unix:uid:0", ctx.Log,
+				"Workload behind join_token agent"); err != nil {
 				return err
 			}
 			return spirectl.CreateEntry(ctx.Compose, "spire-server",
-				"spiffe://mirmat.org/workload-2", agent2ID, "unix:uid:0", ctx.Log)
+				"spiffe://mirmat.org/workload-2", agent2ID, "unix:uid:0", ctx.Log,
+				"Workload behind x509pop agent")
 		},
 		Observe: "Two entries registered with different parent IDs.\n" +
 			"Each workload gets its SVID from its own agent, not from other node pool.\n" +

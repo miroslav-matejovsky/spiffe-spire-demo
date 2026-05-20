@@ -75,8 +75,7 @@ func up(ctx *scenario.Context) error {
 			"We build image now so later steps can show agent record and attestation type.\n" +
 			"No TPM logic here, only user view into server data.",
 		Action: func() error {
-			containerfile := filepath.Join(ctx.RepoRoot, "dashboard", "Containerfile")
-			return podman.Build("spiffe-spire-demo-dashboard:local", containerfile, ctx.RepoRoot, ctx.Log)
+			return podman.BuildDashboard(ctx.RepoRoot, ctx.Log)
 		},
 		Observe: "Dashboard image is ready.\n" +
 			"Later container start will be fast because image already exists locally.\n" +

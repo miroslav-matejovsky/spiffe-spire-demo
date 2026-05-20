@@ -10,7 +10,10 @@
                 <th>SPIFFE ID</th>
                 <th>Parent ID</th>
                 <th>Selectors</th>
+                <th>Hint</th>
+                <th>DNS Names</th>
                 <th>TTL</th>
+                <th>Created</th>
             </tr>
         </thead>
         <tbody>
@@ -20,7 +23,10 @@
                 <td class="mono">{{.SpiffeID}}</td>
                 <td class="mono">{{.ParentID}}</td>
                 <td class="mono">{{.Selectors}}</td>
+                <td>{{if .Hint}}{{.Hint}}{{else}}-{{end}}</td>
+                <td>{{if .DnsNames}}{{.DnsNames}}{{else}}-{{end}}</td>
                 <td>{{.TTL}}s</td>
+                <td>{{.CreatedAt}}</td>
             </tr>
             {{end}}
         </tbody>

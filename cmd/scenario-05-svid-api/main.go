@@ -28,11 +28,10 @@ func up(ctx *scenario.Context) error {
 			"svid-client is Go HTTP client using same API for client certs.\n" +
 			"Neither service reads PEM files from disk. go-spiffe/v2 fetches and rotates SVIDs at runtime.",
 		Action: func() error {
-			dashboardCf := filepath.Join(ctx.RepoRoot, "dashboard", "Containerfile")
 			serverCf := filepath.Join(ctx.ScenarioDir, "server", "Containerfile")
 			clientCf := filepath.Join(ctx.ScenarioDir, "client", "Containerfile")
 
-			if err := podman.Build("spiffe-spire-demo-dashboard:local", dashboardCf, ctx.RepoRoot, ctx.Log); err != nil {
+			if err := podman.BuildDashboard(ctx.RepoRoot, ctx.Log); err != nil {
 				return err
 			}
 			if err := podman.Build("spiffe-spire-demo-svid-server:local", serverCf, ctx.RepoRoot, ctx.Log); err != nil {
@@ -137,11 +136,13 @@ func up(ctx *scenario.Context) error {
 				return err
 			}
 			if err := spirectl.CreateEntry(ctx.Compose, "spire-server",
-				"spiffe://mirmat.org/svid-server", agentID, "unix:uid:10001", ctx.Log); err != nil {
+				"spiffe://mirmat.org/svid-server", agentID, "unix:uid:10001", ctx.Log,
+				"mTLS demo server - handles incoming requests"); err != nil {
 				return err
 			}
 			return spirectl.CreateEntry(ctx.Compose, "spire-server",
-				"spiffe://mirmat.org/svid-client", agentID, "unix:uid:10002", ctx.Log)
+				"spiffe://mirmat.org/svid-client", agentID, "unix:uid:10002", ctx.Log,
+				"mTLS demo client - sends periodic requests")
 		},
 		Observe: "Two workload entries now exist on SPIRE server.\n" +
 			"When svid-server with UID 10001 calls Workload API, agent returns spiffe://mirmat.org/svid-server.\n" +

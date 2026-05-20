@@ -1,8 +1,6 @@
 package main
 
 import (
-	"path/filepath"
-
 	"github.com/miroslav-matejovsky/spiffe-spire-demo/internal/podman"
 	"github.com/miroslav-matejovsky/spiffe-spire-demo/internal/scenario"
 	"github.com/miroslav-matejovsky/spiffe-spire-demo/internal/spirectl"
@@ -26,8 +24,7 @@ func up(ctx *scenario.Context) error {
 			"Multi-stage build compiles Go binary first, then copies only binary into small runtime image.\n" +
 			"Small image keeps demo simple and shows how external tools can package SPIRE API clients.",
 		Action: func() error {
-			containerfile := filepath.Join(ctx.RepoRoot, "dashboard", "Containerfile")
-			return podman.Build("spiffe-spire-demo-dashboard:local", containerfile, ctx.RepoRoot, ctx.Log)
+			return podman.BuildDashboard(ctx.RepoRoot, ctx.Log)
 		},
 		Observe: "Image built. Dashboard container can now start from local image.\n" +
 			"When it runs, it will connect to unix:///tmp/spire-server/private/api.sock.\n" +

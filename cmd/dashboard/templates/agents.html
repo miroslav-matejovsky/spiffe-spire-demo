@@ -9,6 +9,7 @@
                 <th>SPIFFE ID</th>
                 <th>Attestation</th>
                 <th>Expires</th>
+                <th>Selectors</th>
                 <th>Status</th>
             </tr>
         </thead>
@@ -18,12 +19,38 @@
                 <td class="mono">{{.SpiffeID}}</td>
                 <td>{{.Attestation}}</td>
                 <td>{{.ExpiresAt}}</td>
+                <td class="mono" style="font-size:0.8rem">{{if .Selectors}}{{.Selectors}}{{else}}-{{end}}</td>
                 <td>
                     {{if .Banned}}<span class="badge badge-red">Banned</span>
                     {{else}}<span class="badge badge-green">Active</span>{{end}}
                     {{if .CanReattest}}<span class="badge badge-gray">Can Reattest</span>{{end}}
                 </td>
             </tr>
+            {{if .Workloads}}
+            <tr>
+                <td colspan="5" style="padding:0 0.75rem 0.75rem 2rem; border-bottom:2px solid #dee2e6;">
+                    <details>
+                        <summary style="cursor:pointer; color:#495057; font-size:0.85rem; padding:0.25rem 0;">
+                            {{len .Workloads}} registered workload(s)
+                        </summary>
+                        <table style="margin-top:0.5rem; font-size:0.85rem;">
+                            <thead>
+                                <tr><th>SPIFFE ID</th><th>Selectors</th><th>Hint</th></tr>
+                            </thead>
+                            <tbody>
+                                {{range .Workloads}}
+                                <tr>
+                                    <td class="mono">{{.SpiffeID}}</td>
+                                    <td class="mono">{{.Selectors}}</td>
+                                    <td>{{if .Hint}}{{.Hint}}{{else}}-{{end}}</td>
+                                </tr>
+                                {{end}}
+                            </tbody>
+                        </table>
+                    </details>
+                </td>
+            </tr>
+            {{end}}
             {{end}}
         </tbody>
     </table>

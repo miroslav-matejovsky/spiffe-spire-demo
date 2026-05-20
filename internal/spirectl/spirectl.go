@@ -12,8 +12,8 @@ import (
 
 const (
 	spireBin    = "/opt/spire/bin/spire-server"
-	maxAttempts = 15
-	retryDelay  = 2 * time.Second
+	maxAttempts = 30
+	retryDelay  = 3 * time.Second
 )
 
 // tokenRegex matches the SPIRE token output format: "Token: <value>"
@@ -74,7 +74,7 @@ func WaitForAgent(compose *podman.Compose, container, pattern string, log *loggi
 // WaitForAgents waits until all specified patterns appear in agent list output.
 func WaitForAgents(compose *podman.Compose, container string, patterns []string, log *logging.Logger) (string, error) {
 	log.Info("Waiting for all agents to attest...")
-	for attempt := 1; attempt <= 20; attempt++ {
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		output, _ := compose.Exec(container, spireBin, "agent", "list")
 		allFound := true
 		for _, p := range patterns {
@@ -83,24 +83,29 @@ func WaitForAgents(compose *podman.Compose, container string, patterns []string,
 				break
 			}
 		}
-		log.Detailf("attempt %d/20: all agents found=%v", attempt, allFound)
+		log.Detailf("attempt %d/%d: all agents found=%v", attempt, maxAttempts, allFound)
 		if allFound {
 			log.Ok("All agents attested successfully.")
 			return output, nil
 		}
-		time.Sleep(3 * time.Second)
+		time.Sleep(retryDelay)
 	}
-	return "", fmt.Errorf("not all agents attested after 20 attempts (patterns: %v)", patterns)
+	return "", fmt.Errorf("not all agents attested after %d attempts (patterns: %v)", maxAttempts, patterns)
 }
 
 // CreateEntry registers a workload entry with the SPIRE server.
-func CreateEntry(compose *podman.Compose, container, spiffeID, parentID, selector string, log *logging.Logger) error {
+// Optional hint provides a human-readable description for the entry.
+func CreateEntry(compose *podman.Compose, container, spiffeID, parentID, selector string, log *logging.Logger, hints ...string) error {
 	log.Infof("Registering workload: %s (selector: %s)", spiffeID, selector)
-	output, err := compose.Exec(container, spireBin, "entry", "create",
+	args := []string{"entry", "create",
 		"-spiffeID", spiffeID,
 		"-parentID", parentID,
 		"-selector", selector,
-	)
+	}
+	if len(hints) > 0 && hints[0] != "" {
+		args = append(args, "-hint", hints[0])
+	}
+	output, err := compose.Exec(container, append([]string{spireBin}, args...)...)
 	if err != nil {
 		return fmt.Errorf("entry create failed: %w\n%s", err, output)
 	}

@@ -154,6 +154,28 @@ func Build(tag, containerfile, contextDir string, log *logging.Logger) error {
 	return nil
 }
 
+// ImageExists returns true if a container image with the given tag exists locally.
+func ImageExists(tag string) bool {
+	cmd := exec.Command("podman", "image", "exists", tag)
+	return cmd.Run() == nil
+}
+
+// DashboardImage is the standard tag for the SPIRE dashboard container image.
+const DashboardImage = "spiffe-spire-demo-dashboard:local"
+
+// BuildDashboard builds the dashboard image if it does not already exist locally.
+// Skips the build when the image is cached, and prints a hint about how to force
+// a rebuild after code changes.
+func BuildDashboard(repoRoot string, log *logging.Logger) error {
+	if ImageExists(DashboardImage) {
+		log.Info("Dashboard image already exists, skipping build.")
+		log.Info("To rebuild after dashboard code changes: podman rmi " + DashboardImage)
+		return nil
+	}
+	containerfile := filepath.Join(repoRoot, "dashboard", "Containerfile")
+	return Build(DashboardImage, containerfile, repoRoot, log)
+}
+
 // RunCompose starts a service using `podman-compose run -d` with extra args.
 // Used for services that need runtime arguments (like join tokens).
 func (c *Compose) RunDetached(name, service string, args ...string) error {

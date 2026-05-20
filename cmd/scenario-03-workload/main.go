@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -34,8 +33,7 @@ func up(ctx *scenario.Context) error {
 			"We build image first so later browser checks are ready when stack comes up.",
 		),
 		Action: func() error {
-			containerfile := filepath.Join(ctx.RepoRoot, "dashboard", "Containerfile")
-			return podman.Build("spiffe-spire-demo-dashboard:local", containerfile, ctx.RepoRoot, ctx.Log)
+			return podman.BuildDashboard(ctx.RepoRoot, ctx.Log)
 		},
 		Observe: lines(
 			"Dashboard image is ready in local container cache.",
@@ -230,7 +228,8 @@ func register(ctx *scenario.Context) error {
 				return fmt.Errorf("no attested agent found - run 'up' first: %w", err)
 			}
 			return spirectl.CreateEntry(ctx.Compose, "spire-server",
-				"spiffe://mirmat.org/myworkload", agentID, "unix:uid:0", ctx.Log)
+				"spiffe://mirmat.org/myworkload", agentID, "unix:uid:0", ctx.Log,
+				"Demo workload watching for SVIDs")
 		},
 		Observe: lines(
 			"Entry was created in server database.",

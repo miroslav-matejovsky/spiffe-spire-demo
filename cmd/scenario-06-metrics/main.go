@@ -67,8 +67,7 @@ func up(ctx *scenario.Context) error {
 			"We build local image now so compose can start dashboard without extra delay later.\n" +
 			"Dashboard complements metrics by showing entries, agents, and bundles from SPIRE API.",
 		Action: func() error {
-			containerfile := filepath.Join(ctx.RepoRoot, "dashboard", "Containerfile")
-			return podman.Build("spiffe-spire-demo-dashboard:local", containerfile, ctx.RepoRoot, ctx.Log)
+			return podman.BuildDashboard(ctx.RepoRoot, ctx.Log)
 		},
 		Observe: "Dashboard image ready.\n" +
 			"UI container can now join scenario without rebuild work.\n" +
