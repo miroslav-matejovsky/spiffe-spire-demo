@@ -139,7 +139,7 @@ func up(ctx *scenario.Context) error {
 		Observe: "Agent should now be attested via x509pop.\n" +
 			"Compare with scenario 01: attestation type is x509pop instead of join_token.\n" +
 			"Agent SPIFFE ID path also contains x509pop instead of join_token.\n" +
-			"Try: podman-compose exec spire-server /opt/spire/bin/spire-server agent list\n" +
+			"Try: " + ctx.ComposeCmd() + " exec spire-server /opt/spire/bin/spire-server agent list\n" +
 			"Look for attestation data and selector path tied to x509pop flow.\n" +
 			"Main lesson: no shared bootstrap secret was needed.",
 	})

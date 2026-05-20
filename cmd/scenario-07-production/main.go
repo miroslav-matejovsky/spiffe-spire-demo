@@ -187,7 +187,7 @@ func up(ctx *scenario.Context) error {
 			return err
 		},
 		Observe: "Both agents attested.\n" +
-			"Try: podman-compose exec spire-server /opt/spire/bin/spire-server agent list.\n" +
+			"Try: " + ctx.ComposeCmd() + " exec spire-server /opt/spire/bin/spire-server agent list.\n" +
 			"You should see two agents with different attestation types and different SPIFFE IDs.\n" +
 			"Each one is ready to serve its own workload pool.",
 	})

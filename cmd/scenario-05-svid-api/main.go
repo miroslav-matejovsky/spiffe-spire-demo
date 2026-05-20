@@ -171,8 +171,8 @@ func up(ctx *scenario.Context) error {
 		Observe: "Both services are starting now.\n" +
 			"Watch svid-server logs for server SPIFFE ID and client SPIFFE ID seen after each handshake.\n" +
 			"Watch svid-client logs for HTTPS responses proving both identities were accepted.\n" +
-			"Try: podman-compose logs -f svid-server\n" +
-			"Try: podman-compose logs -f svid-client",
+			"Try: " + ctx.ComposeCmd() + " logs -f svid-server\n" +
+			"Try: " + ctx.ComposeCmd() + " logs -f svid-client",
 	})
 	if err != nil {
 		return err
@@ -203,10 +203,11 @@ func up(ctx *scenario.Context) error {
 }
 
 func done(ctx *scenario.Context) {
+	composeCmd := ctx.ComposeCmd()
 	ctx.Log.Step("SVID API scenario is ready!")
 	ctx.Log.Info("Dashboard:    http://localhost:8080")
-	ctx.Log.Info("Server logs:  podman-compose logs -f svid-server")
-	ctx.Log.Info("Client logs:  podman-compose logs -f svid-client")
+	ctx.Log.Info("Server logs:  " + composeCmd + " logs -f svid-server")
+	ctx.Log.Info("Client logs:  " + composeCmd + " logs -f svid-client")
 	ctx.Log.Info("")
 	ctx.Log.Info("What is happening:")
 	ctx.Log.Info("  - svid-server has SPIFFE ID: spiffe://mirmat.org/svid-server")

@@ -16,4 +16,8 @@
 //
 // Scenarios may register additional subcommands (e.g. "register", "fetch") via
 // the Subcommands field in Config.
+//
+// Context.ComposeCmd returns a podman-compose command prefix with the -f flag
+// pointing to the scenario compose.yml. Scenarios use it in suggestion text so
+// that pasted commands work from wherever the user invoked the binary.
 package scenario

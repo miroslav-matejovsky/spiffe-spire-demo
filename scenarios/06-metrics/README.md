@@ -139,7 +139,7 @@ Ensure that the current working directory is `scenarios/06-metrics/` and run:
 
 Once the script is completed, in another terminal run the following command to review the logs from all the services:
 ```powershell
-podman-compose logs -f -t
+podman-compose -f scenarios/06-metrics/compose.yml logs -f -t
 ```
 
 

@@ -44,6 +44,19 @@ type Context struct {
 	ScenarioDir string
 }
 
+// ComposeCmd returns a podman-compose command prefix with the -f flag pointing
+// to the scenario compose.yml. The path is relative to the current working
+// directory so pasted commands work from wherever the user invoked the binary.
+func (ctx *Context) ComposeCmd() string {
+	composePath := filepath.Join(ctx.ScenarioDir, "compose.yml")
+	if cwd, err := os.Getwd(); err == nil {
+		if rel, err := filepath.Rel(cwd, composePath); err == nil {
+			composePath = filepath.ToSlash(rel)
+		}
+	}
+	return fmt.Sprintf("podman-compose -f %s", composePath)
+}
+
 // WaitForDashboard polls a dashboard health URL until it responds 200.
 // Warns but does not error on timeout.
 func (ctx *Context) WaitForDashboard(url string) {

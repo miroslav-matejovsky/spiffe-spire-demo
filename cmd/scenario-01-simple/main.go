@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/miroslav-matejovsky/spiffe-spire-demo/internal/podman"
 	"github.com/miroslav-matejovsky/spiffe-spire-demo/internal/scenario"
 	"github.com/miroslav-matejovsky/spiffe-spire-demo/internal/spirectl"
@@ -36,7 +34,7 @@ func up(ctx *scenario.Context) error {
 			"SQLite datastore under /opt/spire/data/server now holds SPIRE state.\n" +
 			"Server is listening on 8081 for agent traffic and admin API socket\n" +
 			"/tmp/spire-server/private/api.sock is ready for spire-server commands.\n" +
-			"Try: podman-compose logs spire-server",
+			"Try: " + ctx.ComposeCmd() + " logs spire-server",
 	})
 	if err != nil {
 		return err
@@ -100,7 +98,7 @@ func up(ctx *scenario.Context) error {
 			"It presents join token to NodeAttestor \"join_token\" for bootstrap.\n" +
 			"insecure_bootstrap = true means agent trusts server bundle on first contact\n" +
 			"without preloaded bundle, which is fine for demo and bad for production.\n" +
-			"Try: podman-compose logs spire-agent",
+			"Try: " + ctx.ComposeCmd() + " logs spire-agent",
 	})
 	if err != nil {
 		return err
@@ -122,7 +120,7 @@ func up(ctx *scenario.Context) error {
 			"Server assigned SPIFFE ID like spiffe://mirmat.org/spire/agent/join_token/<uuid>.\n" +
 			"Agent now holds valid X.509-SVID and trust bundle for mirmat.org.\n" +
 			"It can serve Workload API to local workloads over workload_api.sock.\n" +
-			"Try: podman-compose exec spire-server /opt/spire/bin/spire-server agent list",
+			"Try: " + ctx.ComposeCmd() + " exec spire-server /opt/spire/bin/spire-server agent list",
 	})
 	if err != nil {
 		return err
@@ -133,6 +131,7 @@ func up(ctx *scenario.Context) error {
 }
 
 func done(ctx *scenario.Context) {
+	composeCmd := ctx.ComposeCmd()
 	ctx.Log.Step("Simple scenario ready")
 	ctx.Log.Info("Server: simple-spire-server")
 	ctx.Log.Info("Agent:  simple-spire-agent")
@@ -144,8 +143,8 @@ func done(ctx *scenario.Context) {
 	ctx.Log.Info("  4. Agent now has X.509-SVID and serves Workload API on local socket")
 	ctx.Log.Info("")
 	ctx.Log.Info("Try next:")
-	ctx.Log.Info("  - podman-compose logs spire-server")
-	ctx.Log.Info("  - podman-compose logs spire-agent")
-	ctx.Log.Info("  - podman-compose exec spire-server /opt/spire/bin/spire-server agent list")
-	ctx.Log.Info(fmt.Sprintf("Tear down with: %s down", "scenario-01-simple"))
+	ctx.Log.Info("  - " + composeCmd + " logs spire-server")
+	ctx.Log.Info("  - " + composeCmd + " logs spire-agent")
+	ctx.Log.Info("  - " + composeCmd + " exec spire-server /opt/spire/bin/spire-server agent list")
+	ctx.Log.Info("Tear down with: scenario-01-simple down")
 }

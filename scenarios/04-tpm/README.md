@@ -131,7 +131,7 @@ The script also auto-runs provisioning if the credentials are missing.
 ### 3. Verify node attestation
 
 ```powershell
-podman-compose exec spire-server /opt/spire/bin/spire-server agent list
+podman-compose -f scenarios/04-tpm/compose.yml exec spire-server /opt/spire/bin/spire-server agent list
 ```
 
 You should see an attested agent entry in the server output.
@@ -139,7 +139,7 @@ You should see an attested agent entry in the server output.
 ### 4. Inspect logs if you want more detail
 
 ```powershell
-podman-compose logs -f -t
+podman-compose -f scenarios/04-tpm/compose.yml logs -f -t
 ```
 
 ## How the Demo Maps to Real TPM Attestation
