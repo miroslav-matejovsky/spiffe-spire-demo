@@ -13,6 +13,7 @@ pipeline-query
 
 # agent stuff
 .task/
+.antigravitycli
 
 # Scenario logs (created at runtime, bind-mounted from containers)
 scenarios/*/logs/
