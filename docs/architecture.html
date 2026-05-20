@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architecture - SPIFFE/SPIRE Guide</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>SPIFFE/SPIRE Guide</h2>
+      <div class="version">SPIRE v1.15.0</div>
+    </div>
+    <nav>
+      <div class="nav-section">Getting Started</div>
+      <a href="index.html">Home</a>
+      <a href="introduction.html">Introduction</a>
+      <a href="architecture.html" class="active">Architecture</a>
+      <a href="concepts.html">Core Concepts</a>
+      <div class="nav-section">Operations</div>
+      <a href="deployment.html">Deployment</a>
+      <a href="networking.html">Networking &amp; Security</a>
+      <a href="configuration.html">Configuration</a>
+      <div class="nav-section">Practice</div>
+      <a href="scenarios.html">Hands-on Scenarios</a>
+      <a href="production.html">Production Guide</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="https://spiffe.io/docs/latest/">Official SPIFFE Docs &#8599;</a>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="breadcrumb">
+        <a href="index.html">Home</a><span class="sep">&gt;</span><span>Architecture</span>
+      </div>
+
+      <h1>SPIRE Architecture and Components</h1>
+      <p>SPIRE turns SPIFFE concepts into running infrastructure. It issues identities for workloads, distributes trust bundles, and makes those identities available over a local API instead of through static certificate files.</p>
+
+      <h2>Overview</h2>
+      <div class="callout callout-info">
+        <div class="callout-title">Core shape</div>
+        <p>SPIRE consists of a Server, one or more Agents, and the Workload API. Server acts as trust anchor and signing authority. Agents run close to workloads. Workloads connect to the local Workload API to fetch SVIDs and trust bundles.</p>
+      </div>
+      <div class="card-grid">
+        <div class="card">
+          <h3>SPIRE Server</h3>
+          <p>Holds registration data, trust bundle state, and signing keys for trust domain.</p>
+        </div>
+        <div class="card">
+          <h3>SPIRE Agent</h3>
+          <p>Attests node, caches workload SVIDs, and exposes local APIs over Unix sockets.</p>
+        </div>
+        <div class="card">
+          <h3>Workload API</h3>
+          <p>Standard SPIFFE API used by applications and SDKs such as go-spiffe.</p>
+        </div>
+      </div>
+
+      <h2>Architecture Diagram</h2>
+      <div class="diagram">
+        <svg viewBox="0 0 800 500" width="800" height="500" role="img" aria-label="SPIRE architecture diagram">
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#475569"></path>
+            </marker>
+          </defs>
+
+          <rect x="180" y="35" width="440" height="140" rx="16" fill="#eff6ff" stroke="#2563eb" stroke-width="3"></rect>
+          <text x="400" y="62" text-anchor="middle" font-size="24" font-weight="700" fill="#1e3a8a">SPIRE Server</text>
+          <rect x="205" y="85" width="90" height="54" rx="10" fill="#2563eb" opacity="0.12" stroke="#2563eb"></rect>
+          <rect x="305" y="85" width="90" height="54" rx="10" fill="#2563eb" opacity="0.12" stroke="#2563eb"></rect>
+          <rect x="405" y="85" width="90" height="54" rx="10" fill="#2563eb" opacity="0.12" stroke="#2563eb"></rect>
+          <rect x="505" y="85" width="90" height="54" rx="10" fill="#2563eb" opacity="0.12" stroke="#2563eb"></rect>
+          <text x="250" y="118" text-anchor="middle" font-size="15" font-weight="600" fill="#1e3a8a">DataStore</text>
+          <text x="350" y="118" text-anchor="middle" font-size="15" font-weight="600" fill="#1e3a8a">KeyManager</text>
+          <text x="450" y="118" text-anchor="middle" font-size="15" font-weight="600" fill="#1e3a8a">NodeAttestor</text>
+          <text x="550" y="118" text-anchor="middle" font-size="15" font-weight="600" fill="#1e3a8a">UpstreamAuthority</text>
+
+          <line x1="400" y1="175" x2="400" y2="220" stroke="#475569" stroke-width="3" marker-end="url(#arrow)"></line>
+          <text x="420" y="195" font-size="16" font-weight="600" fill="#334155">gRPC mTLS</text>
+          <text x="420" y="214" font-size="14" fill="#64748b">port 8081</text>
+
+          <rect x="170" y="225" width="460" height="140" rx="16" fill="#ecfdf5" stroke="#059669" stroke-width="3"></rect>
+          <text x="400" y="252" text-anchor="middle" font-size="24" font-weight="700" fill="#065f46">SPIRE Agent</text>
+          <rect x="195" y="275" width="95" height="54" rx="10" fill="#059669" opacity="0.12" stroke="#059669"></rect>
+          <rect x="300" y="275" width="115" height="54" rx="10" fill="#059669" opacity="0.12" stroke="#059669"></rect>
+          <rect x="425" y="275" width="90" height="54" rx="10" fill="#059669" opacity="0.12" stroke="#059669"></rect>
+          <rect x="525" y="275" width="80" height="54" rx="10" fill="#059669" opacity="0.12" stroke="#059669"></rect>
+          <text x="242" y="308" text-anchor="middle" font-size="15" font-weight="600" fill="#065f46">NodeAttestor</text>
+          <text x="357" y="308" text-anchor="middle" font-size="15" font-weight="600" fill="#065f46">WorkloadAttestor</text>
+          <text x="470" y="308" text-anchor="middle" font-size="15" font-weight="600" fill="#065f46">KeyManager</text>
+          <text x="565" y="308" text-anchor="middle" font-size="15" font-weight="600" fill="#065f46">SVIDStore</text>
+
+          <line x1="400" y1="365" x2="400" y2="405" stroke="#475569" stroke-width="3" marker-end="url(#arrow)"></line>
+          <text x="420" y="384" font-size="16" font-weight="600" fill="#334155">Workload API</text>
+          <text x="420" y="403" font-size="14" fill="#64748b">Unix Domain Socket</text>
+
+          <rect x="120" y="410" width="160" height="62" rx="12" fill="#fff7ed" stroke="#d97706" stroke-width="3"></rect>
+          <rect x="320" y="410" width="160" height="62" rx="12" fill="#fff7ed" stroke="#d97706" stroke-width="3"></rect>
+          <rect x="520" y="410" width="160" height="62" rx="12" fill="#fff7ed" stroke="#d97706" stroke-width="3"></rect>
+          <text x="200" y="446" text-anchor="middle" font-size="18" font-weight="700" fill="#9a3412">Workload A</text>
+          <text x="400" y="446" text-anchor="middle" font-size="18" font-weight="700" fill="#9a3412">Workload B</text>
+          <text x="600" y="446" text-anchor="middle" font-size="18" font-weight="700" fill="#9a3412">Workload C</text>
+          <text x="400" y="490" text-anchor="middle" font-size="14" fill="#64748b">Applications fetch X.509-SVIDs, JWT-SVIDs, and trust bundles from local agent</text>
+        </svg>
+        <div class="diagram-caption">Server signs identities for trust domain. Agent brokers access. Workloads never talk to server directly for day-to-day identity fetches.</div>
+      </div>
+
+      <h2>SPIRE Server</h2>
+      <p>SPIRE Server is central authority for trust domain. It stores registration entries, signs SVIDs using its CA key, performs node attestation, and publishes bundle material used to verify identities. In small labs one server may handle everything. In larger setups it is usually protected and backed by durable storage.</p>
+      <ul>
+        <li>Central authority for trust domain and source of truth for registration state.</li>
+        <li>Stores registration entries that map selectors to SPIFFE IDs.</li>
+        <li>Signs agent and workload SVIDs using CA key.</li>
+        <li>Performs node attestation before an agent is trusted.</li>
+        <li>Exposes Registration API via Unix socket at <code>/tmp/spire-server/private/api.sock</code>.</li>
+      </ul>
+      <div class="callout callout-tip">
+        <div class="callout-title">Plugin model</div>
+        <p>Server behavior comes from plugins. Common choices are DataStore <code>sql</code>, KeyManager <code>memory</code>, <code>disk</code>, or <code>aws_kms</code>, NodeAttestor <code>join_token</code>, <code>x509pop</code>, <code>aws_iid</code>, or <code>k8s_psat</code>, and UpstreamAuthority <code>disk</code>, <code>vault</code>, or <code>aws_pca</code>.</p>
+      </div>
+      <p>In repo, Scenario 01 shows bare server and agent bootstrap. Scenario 02 adds dashboard flow around same core server responsibilities.</p>
+
+      <h2>SPIRE Agent</h2>
+      <p>SPIRE Agent runs on every node that hosts workloads. It proves node identity to server, receives an agent SVID, fetches registration data, generates workload keys, and caches workload SVIDs close to processes that need them.</p>
+      <ul>
+        <li>Runs on every node with workloads.</li>
+        <li>Performs node attestation to prove identity to server.</li>
+        <li>Caches SVIDs for workloads so applications can fetch them locally.</li>
+        <li>Exposes Workload API as Unix Domain Socket.</li>
+        <li>Performs workload attestation by checking PID, UID, and container metadata.</li>
+      </ul>
+      <div class="callout callout-info">
+        <div class="callout-title">Agent plugins</div>
+        <p>Agent also uses plugins: NodeAttestor for proving node identity, WorkloadAttestor plugins such as <code>unix</code>, <code>k8s</code>, or <code>docker</code>, and KeyManager plugins for workload private keys.</p>
+      </div>
+      <p>In repo, Scenario 01 shows basic node bootstrap. Scenario 03 focuses on workload attestation and local identity delivery through agent.</p>
+
+      <h2>Workload API</h2>
+      <p>Workload API is SPIFFE standard API for applications. It is exposed by agent as Unix Domain Socket, typically at <code>/tmp/spire-agent/public/api.sock</code>. Applications do not parse agent cache directly. They call API methods such as <code>FetchX509SVID</code>, <code>FetchJWTSVID</code>, and bundle fetch operations.</p>
+      <pre><code>Workload --unix socket--&gt; SPIRE Agent Workload API
+
+Common calls:
+- FetchX509SVID
+- FetchX509Bundles
+- FetchJWTSVID
+- FetchJWTBundles</code></pre>
+      <p><a href="https://github.com/spiffe/go-spiffe">go-spiffe</a> wraps API for Go applications and handles watchers, source updates, and identity parsing. Agent also pushes updated SVIDs before expiry so workloads get auto-rotation without restart. Scenario 05 in repo demonstrates this model with mTLS client and server.</p>
+      <div class="callout callout-warning">
+        <div class="callout-title">Why local socket matters</div>
+        <p>Workloads only need access to local agent socket. Server can stay isolated. Identity checks stay tied to local process context.</p>
+      </div>
+
+      <h2>SVID Issuance Flow</h2>
+      <p>Below is typical day-in-life flow from cold start to workload identity fetch.</p>
+      <div class="learning-path">
+        <div class="learning-step">
+          <div class="step-marker">1</div>
+          <div class="step-content"><h4>Server boots</h4><p>Server starts and generates self-signed CA for trust domain, or uses UpstreamAuthority to chain to external CA.</p></div>
+        </div>
+        <div class="learning-step">
+          <div class="step-marker">2</div>
+          <div class="step-content"><h4>Agent attests node</h4><p>Agent starts and performs node attestation by sending proof such as join token, X.509 proof-of-possession, or cloud metadata.</p></div>
+        </div>
+        <div class="learning-step">
+          <div class="step-marker">3</div>
+          <div class="step-content"><h4>Server issues agent SVID</h4><p>Server validates proof and returns agent SVID plus bundle data.</p></div>
+        </div>
+        <div class="learning-step">
+          <div class="step-marker">4</div>
+          <div class="step-content"><h4>Agent reconnects with mTLS</h4><p>Agent now talks to server over authenticated gRPC mTLS.</p></div>
+        </div>
+        <div class="learning-step">
+          <div class="step-marker">5</div>
+          <div class="step-content"><h4>Registration data arrives</h4><p>Agent fetches registration entries that describe which workloads are allowed to receive which SPIFFE IDs.</p></div>
+        </div>
+        <div class="learning-step">
+          <div class="step-marker">6</div>
+          <div class="step-content"><h4>Agent builds CSRs</h4><p>Agent generates key pairs for workloads and sends certificate signing requests to server.</p></div>
+        </div>
+        <div class="learning-step">
+          <div class="step-marker">7</div>
+          <div class="step-content"><h4>Server signs workload identities</h4><p>Server signs CSRs and returns workload SVIDs.</p></div>
+        </div>
+        <div class="learning-step">
+          <div class="step-marker">8</div>
+          <div class="step-content"><h4>Agent caches results</h4><p>Agent stores workload SVIDs and bundle material in local cache and exposes them through Workload API.</p></div>
+        </div>
+        <div class="learning-step">
+          <div class="step-marker">9</div>
+          <div class="step-content"><h4>Workload requests identity</h4><p>Workload calls Workload API. Agent checks PID, UID, or container metadata to find matching selectors.</p></div>
+        </div>
+        <div class="learning-step">
+          <div class="step-marker">10</div>
+          <div class="step-content"><h4>Agent returns cached SVID</h4><p>Agent returns matching cached SVID and keeps it rotated before expiry.</p></div>
+        </div>
+      </div>
+
+      <h2>Plugin Architecture</h2>
+      <p>SPIRE stays flexible by defining narrow plugin types. Same control plane can fit laptops, VMs, Kubernetes, and cloud-native environments by swapping plugin implementations.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Plugin Type</th>
+            <th>Purpose</th>
+            <th>Example Plugins</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>DataStore</td>
+            <td>Persists registration entries, bundles, and server state.</td>
+            <td><code>sql</code></td>
+          </tr>
+          <tr>
+            <td>KeyManager</td>
+            <td>Creates and stores signing keys or workload keys.</td>
+            <td><code>memory</code>, <code>disk</code>, <code>aws_kms</code></td>
+          </tr>
+          <tr>
+            <td>NodeAttestor</td>
+            <td>Verifies node identity before issuing agent SVID.</td>
+            <td><code>join_token</code>, <code>x509pop</code>, <code>aws_iid</code>, <code>k8s_psat</code></td>
+          </tr>
+          <tr>
+            <td>WorkloadAttestor</td>
+            <td>Maps local process or container properties to selectors.</td>
+            <td><code>unix</code>, <code>k8s</code>, <code>docker</code></td>
+          </tr>
+          <tr>
+            <td>UpstreamAuthority</td>
+            <td>Signs SPIRE CA with external or higher-level CA.</td>
+            <td><code>disk</code>, <code>vault</code>, <code>aws_pca</code></td>
+          </tr>
+          <tr>
+            <td>Notifier</td>
+            <td>Signals external systems when bundle data changes.</td>
+            <td><code>k8sbundle</code></td>
+          </tr>
+          <tr>
+            <td>BundlePublisher</td>
+            <td>Publishes trust bundles to external distribution targets.</td>
+            <td><code>disk</code>, <code>aws_s3</code>, <code>gcs</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="page-nav">
+        <a href="introduction.html" class="prev">
+          <span class="label">Previous</span>
+          <span class="title">Introduction</span>
+        </a>
+        <a href="concepts.html" class="next">
+          <span class="label">Next</span>
+          <span class="title">Core Concepts</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

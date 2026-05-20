@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Core Concepts - SPIFFE/SPIRE Guide</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>SPIFFE/SPIRE Guide</h2>
+      <div class="version">SPIRE v1.15.0</div>
+    </div>
+    <nav>
+      <div class="nav-section">Getting Started</div>
+      <a href="index.html">Home</a>
+      <a href="introduction.html">Introduction</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="concepts.html" class="active">Core Concepts</a>
+      <div class="nav-section">Operations</div>
+      <a href="deployment.html">Deployment</a>
+      <a href="networking.html">Networking &amp; Security</a>
+      <a href="configuration.html">Configuration</a>
+      <div class="nav-section">Practice</div>
+      <a href="scenarios.html">Hands-on Scenarios</a>
+      <a href="production.html">Production Guide</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="https://spiffe.io/docs/latest/">Official SPIFFE Docs &#8599;</a>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="breadcrumb">
+        <a href="index.html">Home</a><span class="sep">&gt;</span><span>Core Concepts</span>
+      </div>
+
+      <h1>Core SPIFFE/SPIRE Concepts</h1>
+      <p>SPIFFE defines identity model. SPIRE implements it. Once core terms are clear, rest of system becomes much easier to reason about.</p>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Official references</div>
+        <p>Keep <a href="https://spiffe.io/docs/latest/spiffe-about/spiffe-concepts/">SPIFFE concepts</a> and <a href="https://spiffe.io/docs/latest/deploying/registering/">registration entry docs</a> close while learning. They explain naming rules, bundle formats, and API behavior in detail.</p>
+      </div>
+
+      <h2>SPIFFE ID</h2>
+      <p>SPIFFE ID is workload identity string. It uses URI format <code>spiffe://trust-domain/path</code>. Trust domain names identity provider boundary. Path carries workload-specific meaning and is usually organized to match teams, namespaces, services, or environments.</p>
+      <pre><code>spiffe://example.org/web-server
+spiffe://prod.acme.com/ns/default/sa/api
+spiffe://mirmat.org/svid-client</code></pre>
+      <ul>
+        <li>Trust domain is like DNS domain in shape, but it does not need DNS resolution.</li>
+        <li>Path is hierarchical and conventionally represents org structure or workload location.</li>
+        <li>Maximum trust domain length is 255 characters.</li>
+      </ul>
+      <div class="callout callout-tip">
+        <div class="callout-title">Naming hint</div>
+        <p>Good SPIFFE IDs are stable and boring. Put human-readable ownership in path. Avoid encoding ephemeral instance details into identity path unless policy really needs it.</p>
+      </div>
+
+      <h2>SVID (SPIFFE Verifiable Identity Document)</h2>
+      <p>SVID is concrete credential bound to SPIFFE ID. SPIRE can issue X.509-SVIDs for mutual TLS and JWT-SVIDs for token-based systems.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Format</th>
+            <th>Primary use</th>
+            <th>Default TTL</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>X.509-SVID</td>
+            <td>X.509 certificate</td>
+            <td>mTLS and certificate-based auth</td>
+            <td>1 hour</td>
+            <td>Auto-rotated by agent, key type is <code>ec-p256</code> by default, used in Scenario 05.</td>
+          </tr>
+          <tr>
+            <td>JWT-SVID</td>
+            <td>JWT token</td>
+            <td>Bearer-token auth and service-to-service API calls</td>
+            <td>5 minutes</td>
+            <td>Contains <code>sub</code>, <code>aud</code>, and <code>exp</code>. Short TTL matters because JWT-SVIDs cannot be revoked.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>X.509-SVID</h3>
+      <p>X.509-SVID is normal-looking certificate with SPIFFE ID carried in SAN URI field. Peers verify certificate chain against trust bundle and read identity from URI SAN, not from Common Name.</p>
+      <pre><code>Certificate:
+  Subject: CN=
+  Subject Alternative Name:
+    URI:spiffe://example.org/web-server
+  Issuer: CN=SPIRE Server CA
+  Key Usage: Digital Signature, Key Encipherment
+  Extended Key Usage: TLS Web Client Authentication, TLS Web Server Authentication
+  Validity:
+    Not Before: 2025-01-01T12:00:00Z
+    Not After : 2025-01-01T13:00:00Z</code></pre>
+      <p>Scenario 05 shows X.509-SVID use end to end with Go services and mTLS.</p>
+
+      <h3>JWT-SVID</h3>
+      <p>JWT-SVID is signed token with SPIFFE ID in <code>sub</code> claim, audience in <code>aud</code>, and expiry in <code>exp</code>. It is useful when transport is not mTLS-friendly or when upstream services already expect bearer tokens.</p>
+      <pre><code>{
+  "sub": "spiffe://example.org/web-server",
+  "aud": ["payments-api"],
+  "exp": 1735747500
+}</code></pre>
+      <p>More background lives in <a href="https://spiffe.io/docs/latest/spiffe-about/spiffe-concepts/">official SPIFFE concepts docs</a>.</p>
+
+      <h2>Trust Domain</h2>
+      <p>Trust domain is root of trust for one identity provider boundary. All workloads inside same trust domain ultimately chain back to same CA material and share same SPIFFE ID prefix.</p>
+      <ul>
+        <li>Configured in <code>server.conf</code> and <code>agent.conf</code>. Values must match.</li>
+        <li>Examples: <code>prod.acme.com</code>, <code>staging.acme.com</code>, <code>partner.org</code>.</li>
+        <li>Repo uses trust domain <code>mirmat.org</code>.</li>
+        <li>Federation lets workloads trust identities from foreign trust domains without merging them.</li>
+      </ul>
+      <div class="callout callout-warning">
+        <div class="callout-title">Boundary rule</div>
+        <p>Changing trust domain is identity-breaking change. Every SPIFFE ID changes. Treat it like moving to new certificate authority boundary.</p>
+      </div>
+
+      <h2>Trust Bundle</h2>
+      <p>Trust bundle is collection of public keys and root certificates used to verify SVIDs for one trust domain. Server auto-generates bundle on first startup, then agents and workloads use it to verify peers.</p>
+      <ul>
+        <li>Used to verify SVIDs from matching trust domain.</li>
+        <li>Agents get initial bundle through <code>trust_bundle_path</code> or <code>insecure_bootstrap</code>.</li>
+        <li>Bundle rotation is automatic. Agents fetch updates from server.</li>
+        <li>Federation bundles are bundles imported from foreign trust domains.</li>
+      </ul>
+      <div class="callout callout-info">
+        <div class="callout-title">Mental model</div>
+        <p>SVID is leaf identity. Trust bundle is verification material. One proves who peer says it is. Other proves why you should believe it.</p>
+      </div>
+
+      <h2>Registration Entries</h2>
+      <p>Registration entry maps SPIFFE ID to selectors. It also defines parent ID, which tells SPIRE which agent is allowed to issue that identity. All selectors on one entry use AND logic, so workload must satisfy every listed selector.</p>
+      <ul>
+        <li>Maps one SPIFFE ID to one or more selectors.</li>
+        <li>Parent ID restricts which agent can mint identity.</li>
+        <li>Created with <code>spire-server entry create</code>.</li>
+        <li>Repo references: Scenario 03 <code>register-workload.ps1</code>, Scenario 05 <code>register-workloads.ps1</code>.</li>
+      </ul>
+      <pre><code>spire-server entry create \
+  -spiffeID spiffe://mirmat.org/svid-server \
+  -parentID spiffe://mirmat.org/spire/agent/join_token/worker-1 \
+  -selector unix:uid:10001
+
+spire-server entry create \
+  -spiffeID spiffe://mirmat.org/svid-client \
+  -parentID spiffe://mirmat.org/spire/agent/join_token/worker-1 \
+  -selector unix:uid:10002</code></pre>
+      <p>More details: <a href="https://spiffe.io/docs/latest/deploying/registering/">SPIFFE registration guide</a>.</p>
+
+      <h2>Node Attestation</h2>
+      <p>Node attestation is how agent proves it belongs to infrastructure you trust. Different attestors match different environments and threat models.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Typical platform</th>
+            <th>How identity is proven</th>
+            <th>Security level</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>join_token</code></td>
+            <td>Labs, demos, initial bootstrap</td>
+            <td>One-time pre-shared token issued by server</td>
+            <td>Basic</td>
+          </tr>
+          <tr>
+            <td><code>x509pop</code></td>
+            <td>VMs or hosts with existing PKI</td>
+            <td>Proof of possession for existing X.509 certificate</td>
+            <td>Strong</td>
+          </tr>
+          <tr>
+            <td><code>aws_iid</code></td>
+            <td>AWS EC2</td>
+            <td>AWS Instance Identity Document signed by AWS</td>
+            <td>Strong</td>
+          </tr>
+          <tr>
+            <td><code>k8s_psat</code></td>
+            <td>Kubernetes</td>
+            <td>Projected service account token bound to cluster issuer</td>
+            <td>Strong</td>
+          </tr>
+          <tr>
+            <td><code>tpm_devid</code></td>
+            <td>Hardware-backed hosts</td>
+            <td>TPM DevID certificate anchored in hardware</td>
+            <td>Very strong</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout callout-tip">
+        <div class="callout-title">Repo trail</div>
+        <p><code>join_token</code> is easiest starting point and appears in Scenario 01. <code>x509pop</code> appears in Scenario 04.</p>
+      </div>
+
+      <h2>Workload Attestation</h2>
+      <p>Workload attestation is how local process proves what it is so agent can choose matching registration entry.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Attestor type</th>
+            <th>Available selectors</th>
+            <th>Common use</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>unix</code></td>
+            <td><code>uid</code>, <code>gid</code>, process path, sometimes supplementary process details</td>
+            <td>Linux hosts and containers sharing Unix socket</td>
+          </tr>
+          <tr>
+            <td><code>k8s</code></td>
+            <td>namespace, service account, pod labels, pod UID</td>
+            <td>Kubernetes-native identity policy</td>
+          </tr>
+          <tr>
+            <td><code>docker</code></td>
+            <td>container labels, image, container ID</td>
+            <td>Container-focused selector matching outside Kubernetes</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Repo uses <code>unix</code> workload attestation in Scenario 03 and Scenario 05. Agent checks calling PID and UID on local socket before returning identity.</p>
+
+      <h2>Certificate Rotation</h2>
+      <p>SPIRE automates credential lifecycle. Agents monitor SVID expiry and renew before half-life, then push updates through Workload API streams so applications do not need manual reload logic.</p>
+      <div class="learning-path">
+        <div class="learning-step">
+          <div class="step-marker">1</div>
+          <div class="step-content"><h4>Agent tracks expiry</h4><p>Agent watches TTL on cached SVIDs and trust bundles.</p></div>
+        </div>
+        <div class="learning-step">
+          <div class="step-marker">2</div>
+          <div class="step-content"><h4>Renew before half-life</h4><p>Before halfway point, agent asks server for fresh credentials.</p></div>
+        </div>
+        <div class="learning-step">
+          <div class="step-marker">3</div>
+          <div class="step-content"><h4>Stream updates</h4><p>Updated SVIDs are streamed to workloads through Workload API watchers.</p></div>
+        </div>
+        <div class="learning-step">
+          <div class="step-marker">4</div>
+          <div class="step-content"><h4>No downtime</h4><p>Applications keep using refreshed identity without restart or manual certificate reload.</p></div>
+        </div>
+      </div>
+      <pre><code>// go-spiffe sources handle rotation for you.
+source, err := workloadapi.NewX509Source(ctx)
+if err != nil {
+    return err
+}
+defer source.Close()</code></pre>
+      <div class="callout callout-info">
+        <div class="callout-title">Scenario 05</div>
+        <p>Scenario 05 shows rotation-friendly integration through go-spiffe SDK. Application code fetches from source. Agent handles refresh cycle.</p>
+      </div>
+
+      <div class="page-nav">
+        <a href="architecture.html" class="prev">
+          <span class="label">Previous</span>
+          <span class="title">Architecture</span>
+        </a>
+        <a href="deployment.html" class="next">
+          <span class="label">Next</span>
+          <span class="title">Deployment</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

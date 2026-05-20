@@ -74,7 +74,7 @@ Workload registration happens in `scripts/register-workloads.ps1` using `spire-s
 ## Key Conventions
 
 - **Trust domain** is `mirmat.org` across all scenarios.
-- **SPIRE version** is `1.14.5` (pinned in all `compose.yml` files).
+- **SPIRE version** is `1.15.0` (pinned in all `compose.yml` files).
 - `insecure_bootstrap = true` is intentional in agent configs for join-token demos, not for production.
 - The dashboard is built from `dashboard/` using a multi-stage Containerfile. All scenarios from 02 onward include it.
 - Server configs use `KeyManager "memory"` and SQLite (`DataStore "sql"`) unless the scenario is intentionally demonstrating a different pattern.
