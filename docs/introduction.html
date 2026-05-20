@@ -23,6 +23,9 @@
       <a href="deployment.html">Deployment</a>
       <a href="networking.html">Networking &amp; Security</a>
       <a href="configuration.html">Configuration</a>
+      <div class="nav-section">Developer Guides</div>
+      <a href="developer-guide.html">Workload API Guide</a>
+      <a href="server-api-guide.html">Server API Guide</a>
       <div class="nav-section">Practice</div>
       <a href="scenarios.html">Hands-on Scenarios</a>
       <a href="production.html">Production Guide</a>
@@ -38,7 +41,7 @@
       </div>
 
       <h1>Introduction to SPIFFE and SPIRE</h1>
-      <p>SPIFFE and SPIRE give traditional and hybrid environments a standard way to issue, deliver, and rotate workload identity. Instead of trusting networks, hostnames, or long-lived secrets, they let services on VMs, physical servers, and Windows machines prove who they are with cryptographic identity tied to runtime facts.</p>
+      <p>SPIFFE and SPIRE give traditional and hybrid environments a standard way to issue, deliver, and rotate workload identity <a href="https://spiffe.io/docs/latest/spiffe-about/overview/">[SPIFFE overview]</a> <a href="https://spiffe.io/docs/latest/spire-about/spire-concepts/">[SPIRE docs]</a>. Instead of trusting networks, hostnames, or long-lived secrets, they let services on VMs, physical servers, and Windows machines prove who they are with cryptographic identity tied to runtime facts.</p>
 
       <div class="callout callout-info">
         <div class="callout-title">Why it matters</div>
@@ -58,12 +61,12 @@
         <p><a href="https://spiffe.io/docs/latest/spiffe-about/overview/">SPIFFE</a>, short for Secure Production Identity Framework for Everyone, is an open standard for workload identity and a CNCF graduated project. It defines a consistent way for services and workloads to identify themselves across platforms and trust boundaries.</p>
         <p>At its core, SPIFFE says every workload should receive a cryptographic identity that software can verify and use for authorization decisions.</p>
         <ul>
-          <li>Every workload gets a cryptographic identity called an SVID, or SPIFFE Verifiable Identity Document</li>
-          <li>Identity is expressed as a URI such as <code>spiffe://trust-domain/path</code></li>
+          <li>Every workload gets a cryptographic identity called an SVID, or SPIFFE Verifiable Identity Document <a href="https://github.com/spiffe/spiffe/blob/main/standards/X509-SVID.md">[X509-SVID spec]</a></li>
+          <li>Identity is expressed as a URI such as <code>spiffe://trust-domain/path</code> <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE.md">[SPIFFE ID spec]</a></li>
           <li>Identity is attested, not manually configured, based on workload properties such as selectors, node state, or platform metadata</li>
           <li>Identity is short-lived and automatically rotated so long-lived secrets do not become operational defaults</li>
         </ul>
-        <p>SPIFFE standardizes identity format, trust bundles, and API expectations so applications and platforms can integrate around shared identity rules instead of inventing their own.</p>
+        <p>SPIFFE standardizes identity format, trust bundles, and API expectations so applications and platforms can integrate around shared identity rules instead of inventing their own <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Trust_Domain_and_Bundle.md">[Trust bundle spec]</a> <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_API.md">[Workload API spec]</a>.</p>
       </section>
 
       <section>
@@ -72,9 +75,9 @@
         <p>SPIRE handles core operational responsibilities:</p>
         <ul>
           <li>Identity issuance and automatic rotation for workloads and nodes</li>
-          <li>Node attestation so a SPIRE Server can determine whether an agent belongs to a trusted node</li>
-          <li>Workload attestation so the right workloads receive the right SPIFFE IDs</li>
-          <li>Trust bundle management so workloads can validate peers from the same or federated trust domains</li>
+          <li>Node attestation so a SPIRE Server can determine whether an agent belongs to a trusted node <a href="https://spiffe.io/docs/latest/spire-about/spire-concepts/#node-attestation">[Node attestation]</a></li>
+          <li>Workload attestation so the right workloads receive the right SPIFFE IDs <a href="https://spiffe.io/docs/latest/spire-about/spire-concepts/#workload-attestation">[Workload attestation]</a></li>
+          <li>Trust bundle management so workloads can validate peers from the same or federated trust domains <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Trust_Domain_and_Bundle.md">[Trust bundle spec]</a></li>
         </ul>
         <p>In other words, SPIRE turns SPIFFE from specification into working infrastructure.</p>
       </section>
@@ -112,7 +115,7 @@
       <section>
         <h2>How SPIRE Works (High Level)</h2>
         <p>At high level, SPIRE Server acts as identity authority. It is usually centralized in a cloud region or datacenter with stable network access, while a SPIRE Agent runs on each VM or physical machine and serves as local broker between workloads and the server.</p>
-        <p>That creates a hub-and-spoke pattern. When a workload starts, the local agent evaluates its selectors and registration entries. If the workload matches a registered identity, the agent exposes SVIDs and trust bundles through the Workload API so applications can keep using local identity material even when connectivity back to the server is intermittent.</p>
+        <p>That creates a hub-and-spoke pattern. When a workload starts, the local agent evaluates its selectors and registration entries. If the workload matches a registered identity, the agent exposes SVIDs and trust bundles through the Workload API so applications can keep using local identity material even when connectivity back to the server is intermittent <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_API.md">[Workload API spec]</a>.</p>
         <p>For deeper component relationships and request flow, continue to <a href="architecture.html">Architecture</a>.</p>
       </section>
 

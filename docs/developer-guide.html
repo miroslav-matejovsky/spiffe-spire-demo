@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Developer Guide: Workload API - SPIFFE/SPIRE Guide</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>SPIFFE/SPIRE Guide</h2>
+      <div class="version">SPIRE v1.15.0</div>
+    </div>
+    <nav>
+      <div class="nav-section">Getting Started</div>
+      <a href="index.html">Home</a>
+      <a href="introduction.html">Introduction</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="concepts.html">Core Concepts</a>
+      <div class="nav-section">Operations</div>
+      <a href="deployment.html">Deployment</a>
+      <a href="networking.html">Networking &amp; Security</a>
+      <a href="configuration.html">Configuration</a>
+      <div class="nav-section">Developer Guides</div>
+      <a href="developer-guide.html" class="active">Workload API Guide</a>
+      <a href="server-api-guide.html">Server API Guide</a>
+      <div class="nav-section">Practice</div>
+      <a href="scenarios.html">Hands-on Scenarios</a>
+      <a href="production.html">Production Guide</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="https://spiffe.io/docs/latest/">Official SPIFFE Docs &#8599;</a>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="breadcrumb">
+        <a href="index.html">Home</a><span class="sep">&gt;</span><span>Workload API Guide</span>
+      </div>
+
+      <h1>Developer Guide: Implementing Workloads with the SPIFFE Workload API</h1>
+      <p>The SPIFFE Workload API is the runtime interface workloads use to fetch identities, trust bundles, and validation data from a local SPIRE Agent. It is the normal path for application code that needs X.509-SVIDs, JWT-SVIDs, or automatic certificate rotation. See the <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_API.md">Workload API spec</a>, the <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_Endpoint.md">Workload Endpoint spec</a>, and <a href="https://spiffe.io/docs/latest/spire-about/spire-concepts/">SPIRE concepts</a>.</p>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Key idea</div>
+        <p>Applications do not talk to SPIRE Server directly. They talk to the local SPIRE Agent over local IPC, then use the returned SVIDs for mTLS or token-based authentication. In most Go applications, the best default is <code>workloadapi.NewX509Source</code> because it keeps identities fresh automatically. See <a href="https://pkg.go.dev/github.com/spiffe/go-spiffe/v2/workloadapi">go-spiffe/workloadapi</a>.</p>
+      </div>
+
+      <h2>1. Overview</h2>
+      <p>The SPIFFE Workload API is a gRPC API served by the local workload endpoint. It provides X.509-SVIDs, JWT-SVIDs, trust bundles, and validation services to workloads at runtime. The endpoint is local to the host and is designed for identity bootstrapping, so workloads connect over local IPC rather than a normal remote network path. See the <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_API.md">Workload API spec</a> and the <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_Endpoint.md">Workload Endpoint spec</a>.</p>
+      <ul>
+        <li><strong>X.509-SVIDs:</strong> certificate chains plus private keys for mTLS workloads.</li>
+        <li><strong>JWT-SVIDs:</strong> signed bearer tokens for HTTP APIs, message buses, and other non-TLS use cases.</li>
+        <li><strong>Trust bundles:</strong> roots used to verify peers from one or more trust domains.</li>
+        <li><strong>Streaming updates:</strong> gRPC streams let the endpoint push rotations and bundle changes as they happen. See <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_API.md#43-stream-responses">Workload API section 4.3</a>.</li>
+      </ul>
+      <p>Workloads usually discover the endpoint from the standard <code>SPIFFE_ENDPOINT_SOCKET</code> environment variable. Conforming clients should use that value when no explicit address is configured. See <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_Endpoint.md#4-locating-the-endpoint">Workload Endpoint section 4</a>.</p>
+
+      <div class="callout callout-tip">
+        <div class="callout-title">Tip</div>
+        <p>Keep application code focused on identity consumption, not identity storage. Let the agent own issuance, rotation, and trust bundle delivery.</p>
+      </div>
+
+      <h2>2. Transport Options</h2>
+      <p>The SPIFFE Workload Endpoint spec says the endpoint may use Unix Domain Sockets or TCP, and clients discover it through a URI such as <code>unix:///...</code> or <code>tcp://127.0.0.1:8000</code>. SPIRE Agent itself exposes local Unix sockets on Unix-like systems and named pipes on Windows. See the <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_Endpoint.md#3-transport">Workload Endpoint transport rules</a> and the <a href="https://spiffe.io/docs/latest/deploying/spire_agent/">SPIRE Agent config reference</a>.</p>
+
+      <table class="config-table">
+        <thead>
+          <tr>
+            <th>Transport</th>
+            <th>Platform</th>
+            <th>URI Scheme</th>
+            <th>SPIRE Agent Config</th>
+            <th>Example</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Unix Domain Socket</td>
+            <td>Linux/macOS</td>
+            <td><code>unix://</code></td>
+            <td><code>socket_path</code> (default: <code>/tmp/spire-agent/public/api.sock</code>)</td>
+            <td><code>unix:///opt/spire/sockets/workload_api.sock</code></td>
+          </tr>
+          <tr>
+            <td>Windows Named Pipe</td>
+            <td>Windows</td>
+            <td><code>npipe://</code></td>
+            <td><code>experimental.named_pipe_name</code> (default: <code>\\spire-agent\\public\\api</code>)</td>
+            <td><code>npipe:///spire-agent/public/api</code></td>
+          </tr>
+          <tr>
+            <td>TCP (localhost)</td>
+            <td>All</td>
+            <td><code>tcp://</code></td>
+            <td>Not supported natively by SPIRE Agent. Requires a proxy such as socat or Envoy in front of the local socket.</td>
+            <td><code>tcp://127.0.0.1:8080</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Unix Domain Socket</h3>
+      <p>Unix Domain Sockets are the normal transport on Linux and macOS. They are local, efficient, and easy for the agent to protect with filesystem permissions and workload attestation rules. SPIRE Agent exposes the workload endpoint with <code>socket_path</code>, and examples often use the default <code>/tmp/spire-agent/public/api.sock</code> while this repository uses <code>/opt/spire/sockets/workload_api.sock</code>. See the <a href="https://spiffe.io/docs/latest/deploying/spire_agent/">Agent config reference</a>.</p>
+
+      <h3>Windows Named Pipe</h3>
+      <p>Windows does not use Unix sockets, so SPIRE Agent exposes the same local endpoint through a named pipe. In URI form, clients use <code>npipe:///spire-agent/public/api</code>. In Windows native notation, the pipe is typically visible as <code>\\.\pipe\spire-agent\public\api</code>. The agent-side configuration uses <code>experimental.named_pipe_name</code>. The <a href="https://pkg.go.dev/github.com/spiffe/go-spiffe/v2/workloadapi">go-spiffe workloadapi package</a> supports named pipe addresses.</p>
+
+      <h3>TCP Through a Local Proxy</h3>
+      <p>The Workload Endpoint spec allows TCP, but SPIRE Agent does not have a native TCP listener setting. That means there is no SPIRE config knob for <code>tcp://</code> access. If a workload absolutely must use TCP, place a local proxy in front of the Unix socket or named pipe. Common choices are socat or Envoy. The proxy should only listen on loopback or another strongly authenticated local path. See the <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_Endpoint.md#3-transport">Workload Endpoint transport rules</a>.</p>
+      <pre><code>socat TCP-LISTEN:8199,fork UNIX-CONNECT:/tmp/spire-agent/public/api.sock</code></pre>
+
+      <div class="callout callout-warning">
+        <div class="callout-title">Warning</div>
+        <p>TCP transport should only be used when Unix sockets or named pipes are truly impossible. The SPIFFE spec requires strong network-level workload authentication (localhost only) when using TCP. SPIRE agent does not natively expose a TCP listener - you need a local proxy.</p>
+      </div>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Transport facts</div>
+        <p>The Workload Endpoint spec says transport may be UDS or TCP, transport security must not require TLS, and every gRPC request must include metadata header <code>workload.spiffe.io: true</code> for SSRF protection. Official SDKs such as go-spiffe handle that header for you. Custom gRPC clients, such as a hand-built C# client, must add it explicitly. See <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_Endpoint.md#3-transport">Workload Endpoint section 3</a>.</p>
+      </div>
+
+      <h3>Locating the Endpoint</h3>
+      <p><code>SPIFFE_ENDPOINT_SOCKET</code> is the standard environment variable used to locate the workload endpoint. Use it unless you have a strong reason to hard-code the address. See <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_Endpoint.md#4-locating-the-endpoint">Workload Endpoint section 4</a>.</p>
+      <pre><code>export SPIFFE_ENDPOINT_SOCKET=unix:///opt/spire/sockets/workload_api.sock
+$env:SPIFFE_ENDPOINT_SOCKET = "npipe:///spire-agent/public/api"</code></pre>
+
+      <h2>3. Go Examples</h2>
+      <p>Go has a first-class SDK in <a href="https://pkg.go.dev/github.com/spiffe/go-spiffe/v2/workloadapi">go-spiffe/workloadapi</a> and TLS helpers in <a href="https://pkg.go.dev/github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig">go-spiffe/spiffetls/tlsconfig</a>. For long-running services, prefer source objects such as <code>X509Source</code> and <code>JWTSource</code> instead of one-shot fetches.</p>
+
+      <h3>3a. Fetching X.509 SVIDs</h3>
+      <pre><code class="language-go">package main
+
+import (
+    "context"
+    "log"
+
+    "github.com/spiffe/go-spiffe/v2/workloadapi"
+)
+
+func main() {
+    ctx := context.Background()
+
+    // Connect to Workload API
+    // Uses SPIFFE_ENDPOINT_SOCKET env var if no address specified
+    client, err := workloadapi.New(ctx,
+        workloadapi.WithAddr("unix:///opt/spire/sockets/workload_api.sock"))
+    if err != nil {
+        log.Fatalf("failed to create workload API client: %v", err)
+    }
+    defer client.Close()
+
+    // Fetch X.509 SVID
+    svid, err := client.FetchX509SVID(ctx)
+    if err != nil {
+        log.Fatalf("failed to fetch SVID: %v", err)
+    }
+
+    log.Printf("SPIFFE ID: %s", svid.ID)
+    log.Printf("Certificate expires: %s", svid.Certificates[0].NotAfter)
+}</code></pre>
+      <p>Use a direct fetch for small tools, diagnostics, or one-shot commands. For daemons and servers, use a source that stays connected and rotates automatically.</p>
+
+      <h3>3b. X509Source with automatic rotation</h3>
+      <pre><code class="language-go">// X509Source connects to Workload API and automatically
+// fetches and rotates X.509 SVIDs in the background
+x509Source, err := workloadapi.NewX509Source(ctx,
+    workloadapi.WithClientOptions(
+        workloadapi.WithAddr("unix:///opt/spire/sockets/workload_api.sock")))
+if err != nil {
+    log.Fatalf("unable to create X509Source: %v", err)
+}
+defer x509Source.Close()
+
+svid, err := x509Source.GetX509SVID()
+if err != nil {
+    log.Fatalf("unable to get X509-SVID: %v", err)
+}
+log.Printf("SPIFFE ID: %s", svid.ID)</code></pre>
+      <p>This is the recommended pattern for real services. The source opens a long-lived stream to the workload endpoint, keeps the current SVID set in memory, and updates it when the agent pushes new data. See <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_API.md#43-stream-responses">Workload API section 4.3</a>.</p>
+
+      <h3>3c. mTLS server</h3>
+      <pre><code class="language-go">package main
+
+import (
+    "context"
+    "log"
+    "net/http"
+
+    "github.com/spiffe/go-spiffe/v2/spiffeid"
+    "github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
+    "github.com/spiffe/go-spiffe/v2/workloadapi"
+)
+
+func main() {
+    ctx := context.Background()
+    socketPath := "unix:///opt/spire/sockets/workload_api.sock"
+
+    x509Source, err := workloadapi.NewX509Source(ctx,
+        workloadapi.WithClientOptions(workloadapi.WithAddr(socketPath)))
+    if err != nil {
+        log.Fatalf("unable to create X509Source: %v", err)
+    }
+    defer x509Source.Close()
+
+    td, _ := spiffeid.TrustDomainFromString("example.org")
+
+    // MTLSServerConfig creates TLS config that:
+    // - Uses SVID as server certificate (auto-rotated)
+    // - Requires client certificates (mutual TLS)
+    // - Authorizes clients from the specified trust domain
+    tlsConfig := tlsconfig.MTLSServerConfig(
+        x509Source, x509Source,
+        tlsconfig.AuthorizeMemberOf(td))
+
+    server := &amp;http.Server{
+        Addr:      ":8443",
+        TLSConfig: tlsConfig,
+    }
+
+    // Empty cert/key paths - TLS config provides certificates
+    log.Fatal(server.ListenAndServeTLS("", ""))
+}</code></pre>
+      <p>In this repository, <code>cmd/svid-server/main.go</code> uses the same pattern with trust domain <code>mirmat.org</code>, adds HTTP handlers, and extracts the client SPIFFE ID from the peer certificate for logging.</p>
+
+      <h3>3d. mTLS client</h3>
+      <pre><code class="language-go">x509Source, err := workloadapi.NewX509Source(ctx,
+    workloadapi.WithClientOptions(workloadapi.WithAddr(socketPath)))
+if err != nil {
+    log.Fatalf("unable to create X509Source: %v", err)
+}
+defer x509Source.Close()
+
+td, _ := spiffeid.TrustDomainFromString("example.org")
+
+tlsConfig := tlsconfig.MTLSClientConfig(
+    x509Source, x509Source,
+    tlsconfig.AuthorizeMemberOf(td))
+
+client := &amp;http.Client{
+    Transport: &amp;http.Transport{TLSClientConfig: tlsConfig},
+}
+
+resp, err := client.Get("https://my-server:8443")</code></pre>
+      <p>In this repository, <code>cmd/svid-client/main.go</code> uses the same flow with <code>mirmat.org</code> and repeatedly calls the demo server to show ongoing mTLS communication.</p>
+
+      <h3>3e. JWT-SVID for non-TLS scenarios</h3>
+      <pre><code class="language-go">package main
+
+import (
+    "context"
+    "log"
+
+    "github.com/spiffe/go-spiffe/v2/svid/jwtsvid"
+    "github.com/spiffe/go-spiffe/v2/workloadapi"
+)
+
+func main() {
+    ctx := context.Background()
+    socketPath := "unix:///opt/spire/sockets/workload_api.sock"
+
+    jwtSource, err := workloadapi.NewJWTSource(ctx,
+        workloadapi.WithClientOptions(workloadapi.WithAddr(socketPath)))
+    if err != nil {
+        log.Fatalf("unable to create JWTSource: %v", err)
+    }
+    defer jwtSource.Close()
+
+    svid, err := jwtSource.FetchJWTSVID(ctx, jwtsvid.Params{
+        Audience: "spiffe://example.org/my-server",
+    })
+    if err != nil {
+        log.Fatalf("unable to fetch JWT-SVID: %v", err)
+    }
+    log.Printf("JWT token: %s", svid.Marshal())
+}</code></pre>
+      <p>Use JWT-SVIDs when you need identity outside mTLS, such as HTTP bearer auth, RPC metadata, or message queue headers. The audience must match what the receiving service expects. See the <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_API.md">Workload API spec</a>.</p>
+
+      <h3>3f. Windows named pipe example</h3>
+      <pre><code class="language-go">x509Source, err := workloadapi.NewX509Source(ctx,
+    workloadapi.WithClientOptions(
+        workloadapi.WithAddr("npipe:///spire-agent/public/api")))</code></pre>
+      <p>The <code>go-spiffe</code> SDK understands <code>unix://</code>, <code>tcp://</code>, and <code>npipe://</code> addresses, so the application code stays mostly the same across platforms. See <a href="https://pkg.go.dev/github.com/spiffe/go-spiffe/v2/workloadapi">go-spiffe/workloadapi</a>.</p>
+
+      <h2>4. C# / .NET Examples</h2>
+      <p>.NET does not have an official SPIFFE SDK today. The practical approach is to generate gRPC client stubs from the official <a href="https://github.com/spiffe/spiffe/blob/main/standards/workloadapi.proto">workloadapi.proto</a>, then connect to the local workload endpoint using the transport available on your platform.</p>
+
+      <div class="callout callout-warning">
+        <div class="callout-title">No official C# SDK</div>
+        <p>There is no official C# SPIFFE SDK today. Java has an official implementation in <code>java-spiffe</code>, but .NET users usually generate client code from <code>workloadapi.proto</code> and handle transport details themselves.</p>
+      </div>
+
+      <h3>4a. Project setup</h3>
+      <pre><code class="language-xml">&lt;!-- .csproj dependencies --&gt;
+&lt;PackageReference Include="Grpc.Net.Client" Version="2.62.0" /&gt;
+&lt;PackageReference Include="Google.Protobuf" Version="3.25.0" /&gt;
+&lt;PackageReference Include="Grpc.Tools" Version="2.62.0" PrivateAssets="All" /&gt;
+
+&lt;!-- Reference the proto file --&gt;
+&lt;Protobuf Include="Protos/workloadapi.proto" GrpcServices="Client" /&gt;</code></pre>
+
+      <h3>4b. Unix Domain Socket (Linux, .NET 5+)</h3>
+      <pre><code class="language-csharp">using System.Net.Sockets;
+using Grpc.Net.Client;
+
+var socketPath = "/opt/spire/sockets/workload_api.sock";
+var udsEndPoint = new UnixDomainSocketEndPoint(socketPath);
+
+var connectionFactory = new UnixDomainSocketsConnectionFactory(udsEndPoint);
+var socketsHandler = new SocketsHttpHandler
+{
+    ConnectCallback = connectionFactory.ConnectAsync
+};
+
+using var channel = GrpcChannel.ForAddress("http://localhost", new GrpcChannelOptions
+{
+    HttpHandler = socketsHandler
+});
+
+var client = new SpiffeWorkloadAPI.SpiffeWorkloadAPIClient(channel);
+
+// Add required SPIFFE metadata header
+var headers = new Grpc.Core.Metadata
+{
+    { "workload.spiffe.io", "true" }
+};
+
+// Fetch X.509 SVIDs
+using var call = client.FetchX509SVID(
+    new X509SVIDRequest(), headers: headers);
+
+await foreach (var response in call.ResponseStream.ReadAllAsync())
+{
+    foreach (var svid in response.Svids)
+    {
+        Console.WriteLine($"SPIFFE ID: {svid.SpiffeId}");
+        // svid.X509Svid contains DER-encoded certificate chain
+        // svid.X509SvidKey contains DER-encoded PKCS#8 private key
+        // svid.Bundle contains DER-encoded trust bundle
+    }
+}</code></pre>
+
+      <p>Helper class for the Unix connection factory:</p>
+      <pre><code class="language-csharp">public class UnixDomainSocketsConnectionFactory
+{
+    private readonly EndPoint _endPoint;
+
+    public UnixDomainSocketsConnectionFactory(EndPoint endPoint)
+    {
+        _endPoint = endPoint;
+    }
+
+    public async ValueTask&lt;Stream&gt; ConnectAsync(
+        SocketsHttpConnectionContext context,
+        CancellationToken cancellationToken = default)
+    {
+        var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+        try
+        {
+            await socket.ConnectAsync(_endPoint, cancellationToken);
+            return new NetworkStream(socket, ownsSocket: true);
+        }
+        catch
+        {
+            socket.Dispose();
+            throw;
+        }
+    }
+}</code></pre>
+
+      <h3>4c. Windows Named Pipe (.NET 6+)</h3>
+      <pre><code class="language-csharp">using System.IO.Pipes;
+using Grpc.Net.Client;
+
+var pipeName = "spire-agent/public/api";
+
+var socketsHandler = new SocketsHttpHandler
+{
+    ConnectCallback = async (context, cancellationToken) =&gt;
+    {
+        var pipe = new NamedPipeClientStream(
+            ".", pipeName,
+            PipeDirection.InOut,
+            PipeOptions.WriteThrough | PipeOptions.Asynchronous);
+
+        await pipe.ConnectAsync(cancellationToken);
+        return pipe;
+    }
+};
+
+using var channel = GrpcChannel.ForAddress("http://localhost", new GrpcChannelOptions
+{
+    HttpHandler = socketsHandler
+});
+
+var client = new SpiffeWorkloadAPI.SpiffeWorkloadAPIClient(channel);</code></pre>
+      <p>You still need the <code>workload.spiffe.io: true</code> metadata header on each call, just like the Unix socket example.</p>
+
+      <h3>4d. TCP localhost (with proxy)</h3>
+      <pre><code class="language-csharp">// If you set up a local proxy (socat) forwarding TCP to UDS:
+// socat TCP-LISTEN:8199,fork UNIX-CONNECT:/tmp/spire-agent/public/api.sock
+
+using var channel = GrpcChannel.ForAddress("http://127.0.0.1:8199");
+var client = new SpiffeWorkloadAPI.SpiffeWorkloadAPIClient(channel);
+
+var headers = new Grpc.Core.Metadata { { "workload.spiffe.io", "true" } };
+// ... same FetchX509SVID call as above</code></pre>
+      <p>Only do this when local IPC is unavailable. Keep the proxy bound to loopback and treat it as a privileged local service. See <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_Endpoint.md#3-transport">Workload Endpoint section 3</a>.</p>
+
+      <h2>5. Authorization Patterns</h2>
+      <p>After mTLS succeeds, the next question is authorization. The <a href="https://pkg.go.dev/github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig">tlsconfig helpers</a> let you move from generic trust-domain checks to exact identity checks or fully custom rules.</p>
+
+      <h3>Authorize any SPIFFE ID in a trust domain</h3>
+      <pre><code class="language-go">td, err := spiffeid.TrustDomainFromString("example.org")
+if err != nil {
+    log.Fatal(err)
+}
+
+tlsConfig := tlsconfig.MTLSServerConfig(
+    x509Source,
+    x509Source,
+    tlsconfig.AuthorizeMemberOf(td),
+)</code></pre>
+
+      <h3>Authorize one exact SPIFFE ID</h3>
+      <pre><code class="language-go">serverID, err := spiffeid.FromString("spiffe://example.org/my-server")
+if err != nil {
+    log.Fatal(err)
+}
+
+tlsConfig := tlsconfig.MTLSClientConfig(
+    x509Source,
+    x509Source,
+    tlsconfig.AuthorizeID(serverID),
+)</code></pre>
+
+      <h3>Authorize one of several exact SPIFFE IDs</h3>
+      <pre><code class="language-go">id1, _ := spiffeid.FromString("spiffe://example.org/api")
+id2, _ := spiffeid.FromString("spiffe://example.org/api-canary")
+
+tlsConfig := tlsconfig.MTLSServerConfig(
+    x509Source,
+    x509Source,
+    tlsconfig.AuthorizeOneOf(id1, id2),
+)</code></pre>
+
+      <h3>Custom authorizer</h3>
+      <pre><code class="language-go">authorizer := tlsconfig.Authorizer(func(id spiffeid.ID, chains [][]*x509.Certificate) error {
+    if id.TrustDomain().String() != "example.org" {
+        return fmt.Errorf("unexpected trust domain: %s", id.TrustDomain())
+    }
+    if !strings.HasPrefix(id.Path(), "/backend/") {
+        return fmt.Errorf("unauthorized workload path: %s", id.Path())
+    }
+    return nil
+})
+
+tlsConfig := tlsconfig.MTLSServerConfig(x509Source, x509Source, authorizer)</code></pre>
+      <p>Use custom authorization when you need business rules that are more specific than trust domain membership. Keep those rules simple and explicit. If the policy becomes large, move it into configuration rather than burying it in code.</p>
+
+      <h2>6. SVID Rotation</h2>
+      <p>SVID rotation is one of the main reasons to use the Workload API instead of loading certificates from files. With <code>X509Source</code>, the SDK keeps a streaming gRPC connection open, receives full updated responses from the agent, and swaps in new SVIDs and bundles as needed. Application code does not need to reload certificates manually. See <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_API.md#43-stream-responses">Workload API section 4.3</a>.</p>
+      <ul>
+        <li><strong>Automatic background updates:</strong> <code>X509Source</code> keeps the current SVID set fresh.</li>
+        <li><strong>No restart required:</strong> the TLS config reads from the source during handshakes, so new connections use rotated credentials automatically.</li>
+        <li><strong>Full-state updates:</strong> each stream response contains the full current set, not just deltas.</li>
+        <li><strong>Redactions matter:</strong> if a later response removes an SVID or bundle, clients should stop using it.</li>
+      </ul>
+
+      <div class="callout callout-tip">
+        <div class="callout-title">Recommended pattern</div>
+        <p>Create one long-lived source per process and share it anywhere you need SPIFFE-based TLS or bundle lookups. Do not fetch a new SVID for every request.</p>
+      </div>
+
+      <h2>7. Error Handling and Resilience</h2>
+      <p>Workload code should expect temporary outages and policy timing issues. The Workload Endpoint and Workload API specs define the main error behaviors. See <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_Endpoint.md#6-error-codes">Workload Endpoint section 6</a>.</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Condition</th>
+            <th>What it means</th>
+            <th>What to do</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Agent unavailable or socket missing</td>
+            <td>The local endpoint is not reachable yet, is restarting, or is overloaded.</td>
+            <td>Retry with backoff. Long-lived sources and clients should reconnect automatically.</td>
+          </tr>
+          <tr>
+            <td>Agent loses server connectivity</td>
+            <td>The local agent cannot currently reach SPIRE Server.</td>
+            <td>Keep using cached SVIDs and bundles while they remain valid. Plan <code>availability_target</code> and TTLs to cover expected outages.</td>
+          </tr>
+          <tr>
+            <td><code>PermissionDenied</code></td>
+            <td>The workload has no registered identity yet, or policy has not propagated.</td>
+            <td>Usually means the workload is not registered. Fix registration, then retry with backoff if eventual consistency is expected.</td>
+          </tr>
+          <tr>
+            <td><code>InvalidArgument</code></td>
+            <td>The mandatory security header is missing or a required request field is invalid.</td>
+            <td>Do not blindly retry. Fix the client. Custom gRPC callers must send <code>workload.spiffe.io: true</code>.</td>
+          </tr>
+          <tr>
+            <td><code>Unavailable</code></td>
+            <td>The endpoint is up but cannot handle the request right now.</td>
+            <td>Retry with backoff.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-warning">
+        <div class="callout-title">Operational rule</div>
+        <p>If you see <code>PermissionDenied</code>, check workload registration first. If you see <code>InvalidArgument</code>, check client implementation first. Only network or availability errors should trigger routine retry loops.</p>
+      </div>
+
+      <p>For long-running services, prefer source-based APIs because they already implement reconnect behavior and keep serving cached data when possible. Avoid writing your own tight reconnect loops around raw gRPC streams unless you truly need custom behavior.</p>
+
+      <h2>8. Connecting to This Repository's Scenario 05</h2>
+      <p>Scenario 05 in this repository is the working example for Workload API-based mTLS. See <code>cmd/svid-server/main.go</code>, <code>cmd/svid-client/main.go</code>, and the scenario assets under <code>scenarios/05-svid-api/</code>.</p>
+      <ul>
+        <li><strong>Shared endpoint:</strong> both binaries connect to <code>unix:///opt/spire/sockets/workload_api.sock</code>.</li>
+        <li><strong>Automatic rotation:</strong> both use <code>workloadapi.NewX509Source</code>.</li>
+        <li><strong>Server authorization:</strong> <code>cmd/svid-server/main.go</code> builds <code>tlsconfig.MTLSServerConfig</code> and authorizes any client in trust domain <code>mirmat.org</code>.</li>
+        <li><strong>Client authorization:</strong> <code>cmd/svid-client/main.go</code> builds <code>tlsconfig.MTLSClientConfig</code> and authorizes servers in trust domain <code>mirmat.org</code>.</li>
+        <li><strong>Workload registration:</strong> Scenario 05 registers identities for the server and client, then the application code simply consumes them through the Workload API.</li>
+      </ul>
+      <p>That split is important: SPIRE handles attestation, registration, issuance, and rotation; the workload code only needs to consume identities and make authorization decisions. If you want a full end-to-end example, start with Scenario 05 and compare the code in <code>cmd/svid-server/main.go</code> and <code>cmd/svid-client/main.go</code> to the snippets above.</p>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Next step</div>
+        <p>After you are comfortable with the Workload API, move to the server-side administrative APIs and dashboard integration patterns in the Server API guide.</p>
+      </div>
+
+      <div class="page-nav">
+        <a href="configuration.html" class="prev">
+          <span class="label">Previous</span>
+          <span class="title">Configuration</span>
+        </a>
+        <a href="server-api-guide.html" class="next">
+          <span class="label">Next</span>
+          <span class="title">Server API Guide</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

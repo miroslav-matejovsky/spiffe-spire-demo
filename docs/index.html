@@ -23,6 +23,9 @@
       <a href="deployment.html">Deployment</a>
       <a href="networking.html">Networking &amp; Security</a>
       <a href="configuration.html">Configuration</a>
+      <div class="nav-section">Developer Guides</div>
+      <a href="developer-guide.html">Workload API Guide</a>
+      <a href="server-api-guide.html">Server API Guide</a>
       <div class="nav-section">Practice</div>
       <a href="scenarios.html">Hands-on Scenarios</a>
       <a href="production.html">Production Guide</a>
@@ -100,19 +103,26 @@
           <div class="learning-step">
             <div class="step-marker">2</div>
             <div class="step-content">
-              <h4><a href="architecture.html">Architecture</a></h4>
-              <p>Learn how workloads talk to SPIRE agents and consume identity material.</p>
+              <h4><a href="developer-guide.html">Workload API Guide</a></h4>
+              <p>Learn transport options (Unix socket, named pipe, TCP), then build workloads in Go or C#.</p>
             </div>
           </div>
           <div class="learning-step">
             <div class="step-marker">3</div>
+            <div class="step-content">
+              <h4><a href="server-api-guide.html">Server API Guide</a></h4>
+              <p>Manage registration entries and build services that use SVID-based authentication.</p>
+            </div>
+          </div>
+          <div class="learning-step">
+            <div class="step-marker">4</div>
             <div class="step-content">
               <h4><a href="scenarios.html">Scenario 05 (mTLS)</a></h4>
               <p>Follow a concrete Go-based mTLS example built on the SPIFFE Workload API.</p>
             </div>
           </div>
           <div class="learning-step">
-            <div class="step-marker">4</div>
+            <div class="step-marker">5</div>
             <div class="step-content">
               <h4><a href="production.html">Production Guide</a></h4>
               <p>Translate local patterns into secure runtime practices for services running on VMs and physical machines.</p>
@@ -192,6 +202,16 @@
             <h3>Configuration</h3>
             <p>Learn how to shape behavior with server, agent, and workload-facing settings.</p>
             <a href="configuration.html">Open page</a>
+          </div>
+          <div class="card">
+            <h3>Workload API Guide</h3>
+            <p>Implement workloads in Go or C# that fetch SVIDs and establish mTLS. Covers transport options: Unix socket, named pipe, TCP.</p>
+            <a href="developer-guide.html">Open page</a>
+          </div>
+          <div class="card">
+            <h3>Server API Guide</h3>
+            <p>Manage registration entries, agents, and bundles via CLI or programmatic gRPC access. Build SVID-authenticated services.</p>
+            <a href="server-api-guide.html">Open page</a>
           </div>
           <div class="card">
             <h3>Hands-on Scenarios</h3>

@@ -23,6 +23,9 @@
       <a href="deployment.html">Deployment</a>
       <a href="networking.html">Networking &amp; Security</a>
       <a href="configuration.html">Configuration</a>
+      <div class="nav-section">Developer Guides</div>
+      <a href="developer-guide.html">Workload API Guide</a>
+      <a href="server-api-guide.html">Server API Guide</a>
       <div class="nav-section">Practice</div>
       <a href="scenarios.html">Hands-on Scenarios</a>
       <a href="production.html">Production Guide</a>
@@ -46,7 +49,7 @@
       </div>
 
       <h2>SPIFFE ID</h2>
-      <p>SPIFFE ID is workload identity string. It uses URI format <code>spiffe://trust-domain/path</code>. Trust domain names identity provider boundary. Path carries workload-specific meaning and is usually organized to match teams, namespaces, services, or environments.</p>
+      <p>SPIFFE ID is workload identity string. It uses URI format <code>spiffe://trust-domain/path</code> <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE.md">[SPIFFE ID spec]</a>. Trust domain names identity provider boundary. Path carries workload-specific meaning and is usually organized to match teams, namespaces, services, or environments.</p>
       <pre><code>spiffe://example.org/web-server
 spiffe://prod.acme.com/ns/default/sa/api
 spiffe://mirmat.org/svid-client
@@ -93,7 +96,7 @@ spiffe://corp.example/remote-site/win-server-01/inventory-app</code></pre>
       </table>
 
       <h3>X.509-SVID</h3>
-      <p>X.509-SVID is normal-looking certificate with SPIFFE ID carried in SAN URI field. Peers verify certificate chain against trust bundle and read identity from URI SAN, not from Common Name.</p>
+      <p>X.509-SVID is normal-looking certificate with SPIFFE ID carried in SAN URI field. Peers verify certificate chain against trust bundle and read identity from URI SAN, not from Common Name <a href="https://github.com/spiffe/spiffe/blob/main/standards/X509-SVID.md">[X509-SVID spec]</a>.</p>
       <pre><code>Certificate:
   Subject: CN=
   Subject Alternative Name:
@@ -107,7 +110,7 @@ spiffe://corp.example/remote-site/win-server-01/inventory-app</code></pre>
       <p>Scenario 05 shows X.509-SVID use end to end with Go services and mTLS.</p>
 
       <h3>JWT-SVID</h3>
-      <p>JWT-SVID is signed token with SPIFFE ID in <code>sub</code> claim, audience in <code>aud</code>, and expiry in <code>exp</code>. It is useful when transport is not mTLS-friendly or when upstream services already expect bearer tokens.</p>
+      <p>JWT-SVID is signed token with SPIFFE ID in <code>sub</code> claim, audience in <code>aud</code>, and expiry in <code>exp</code>. It is useful when transport is not mTLS-friendly or when upstream services already expect bearer tokens <a href="https://github.com/spiffe/spiffe/blob/main/standards/JWT-SVID.md">[JWT-SVID spec]</a>.</p>
       <pre><code>{
   "sub": "spiffe://example.org/web-server",
   "aud": ["payments-api"],
@@ -116,7 +119,7 @@ spiffe://corp.example/remote-site/win-server-01/inventory-app</code></pre>
       <p>More background lives in <a href="https://spiffe.io/docs/latest/spiffe-about/spiffe-concepts/">official SPIFFE concepts docs</a>.</p>
 
       <h2>Trust Domain</h2>
-      <p>Trust domain is root of trust for one identity provider boundary. All workloads inside same trust domain ultimately chain back to same CA material and share same SPIFFE ID prefix.</p>
+      <p>Trust domain is root of trust for one identity provider boundary. All workloads inside same trust domain ultimately chain back to same CA material and share same SPIFFE ID prefix <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Trust_Domain_and_Bundle.md">[Trust domain spec]</a>.</p>
       <ul>
         <li>Configured in <code>server.conf</code> and <code>agent.conf</code>. Values must match.</li>
         <li>Examples: <code>prod.acme.com</code>, <code>staging.acme.com</code>, <code>partner.org</code>.</li>
@@ -142,7 +145,7 @@ spiffe://corp.example/remote-site/win-server-01/inventory-app</code></pre>
       </div>
 
       <h2>Registration Entries</h2>
-      <p>Registration entry maps SPIFFE ID to selectors. It also defines parent ID, which tells SPIRE which agent is allowed to issue that identity. All selectors on one entry use AND logic, so workload must satisfy every listed selector.</p>
+      <p>Registration entry maps SPIFFE ID to selectors. It also defines parent ID, which tells SPIRE which agent is allowed to issue that identity. All selectors on one entry use AND logic, so workload must satisfy every listed selector <a href="https://spiffe.io/docs/latest/spire-about/spire-concepts/#workload-registration">[Registration entries]</a>.</p>
       <ul>
         <li>Maps one SPIFFE ID to one or more selectors.</li>
         <li>Parent ID restricts which agent can mint identity.</li>
@@ -175,19 +178,19 @@ spire-server entry create \
           <tr>
             <td><code>x509pop</code></td>
             <td>VMs or hosts with existing PKI</td>
-            <td>Proof of possession for existing X.509 certificate</td>
+            <td>Proof of possession for existing X.509 certificate <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_server_nodeattestor_x509pop.md">[x509pop plugin]</a></td>
             <td>Strong</td>
           </tr>
           <tr>
             <td><code>tpm_devid</code></td>
             <td>Hardware-backed hosts</td>
-            <td>TPM DevID certificate anchored in hardware</td>
+            <td>TPM DevID certificate anchored in hardware <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_server_nodeattestor_tpm_devid.md">[tpm_devid plugin]</a></td>
             <td>Very strong</td>
           </tr>
           <tr>
             <td><code>join_token</code></td>
             <td>Labs, demos, initial bootstrap</td>
-            <td>One-time pre-shared token issued by server</td>
+            <td>One-time pre-shared token issued by server <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_server_nodeattestor_jointoken.md">[join_token plugin]</a></td>
             <td>Basic</td>
           </tr>
           <tr>
@@ -227,12 +230,12 @@ spire-server entry create \
           <tr>
             <td><code>unix</code></td>
             <td><code>uid</code>, <code>gid</code>, process path, sometimes supplementary process details</td>
-            <td>Primary choice for Linux services and workloads on VMs or physical machines</td>
+            <td>Primary choice for Linux services and workloads on VMs or physical machines <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_agent_workloadattestor_unix.md">[unix plugin]</a></td>
           </tr>
           <tr>
             <td><code>systemd</code></td>
             <td>service name, unit metadata, and related host service attributes</td>
-            <td>Primary choice for long-running Linux services managed by systemd</td>
+            <td>Primary choice for long-running Linux services managed by systemd <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_agent_workloadattestor_systemd.md">[systemd plugin]</a></td>
           </tr>
           <tr>
             <td><code>docker</code></td>

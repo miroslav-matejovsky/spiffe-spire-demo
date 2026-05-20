@@ -23,6 +23,9 @@
       <a href="deployment.html">Deployment</a>
       <a href="networking.html" class="active">Networking &amp; Security</a>
       <a href="configuration.html">Configuration</a>
+      <div class="nav-section">Developer Guides</div>
+      <a href="developer-guide.html">Workload API Guide</a>
+      <a href="server-api-guide.html">Server API Guide</a>
       <div class="nav-section">Practice</div>
       <a href="scenarios.html">Hands-on Scenarios</a>
       <a href="production.html">Production Guide</a>
@@ -38,13 +41,21 @@
       </div>
 
       <h1>Networking, Ports, and Security Considerations</h1>
-      <p>SPIRE uses a small set of network paths. In hub-and-spoke deployments, agents on remote VMs and physical machines need only one outbound port to reach the centralized SPIRE Server. Most sensitive interfaces are local Unix domain sockets, while the server-to-agent control plane uses mutually authenticated gRPC.</p>
+      <p>SPIRE uses a small set of network paths. In hub-and-spoke deployments, agents on remote VMs and physical machines need only one outbound port to reach the centralized SPIRE Server. All connections are agent-initiated - the server never connects back to agents. Most sensitive interfaces are local Unix domain sockets or named pipes, while the agent-to-server control plane uses mutually authenticated gRPC.
+      <a href="https://spiffe.io/docs/latest/spire-about/spire-concepts/">[SPIFFE Concepts overview]</a></p>
 
       <h2>Network Architecture</h2>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Key design: agent-initiated connections only</div>
+        <p>All SPIRE network connections are initiated by agents toward the server. The SPIRE Server never opens connections back to agents. This means agents only need outbound access to the server, and no inbound ports are required on agent machines. This design works well in restricted environments, behind NAT, and without VPN tunnels.
+        <br><a href="https://spiffe.io/docs/latest/spire-about/spire-concepts/#all-about-the-agent">SPIFFE Docs: Agent Concepts</a></p>
+      </div>
+
       <ul>
-        <li><strong>Server-to-Agent:</strong> gRPC over mTLS on port <code>8081</code>. In production, this often traverses WAN, VPN tunnels, or restricted network segments between remote agent machines and the centralized SPIRE Server.</li>
-        <li><strong>Agent-to-Workload:</strong> Unix Domain Socket access to the Workload API. No TCP port is required because workloads talk to the local agent through local IPC.</li>
-        <li><strong>Agent-to-Server reconnection:</strong> agents automatically retry connections and synchronize state when connectivity is restored. Workloads continue using cached SVIDs during outages.</li>
+        <li><strong>Agent-to-Server (outbound, port 8081):</strong> each SPIRE Agent initiates a gRPC connection to the SPIRE Server. The agent connects outbound on port <code>8081</code> using mTLS. The server never connects back to agents. This is critical for restricted networks - agents only need one outbound port open. <a href="https://spiffe.io/docs/latest/deploying/spire_agent/#agent-configuration-file">[Agent config reference]</a></li>
+        <li><strong>Agent-to-Workload (local IPC):</strong> workloads on the same machine connect to the agent through a Unix Domain Socket (Linux) or Named Pipe (Windows). No TCP port is required. <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_Endpoint.md#3-transport">[SPIFFE Workload Endpoint spec]</a></li>
+        <li><strong>Automatic reconnection:</strong> when connectivity drops, agents automatically retry with exponential backoff. Workloads continue using cached SVIDs during outages. No manual intervention needed. <a href="https://spiffe.io/docs/latest/deploying/spire_agent/#availability-target">[Availability target docs]</a></li>
         <li><strong>Dashboard-to-Server:</strong> Unix Domain Socket access through a shared volume mounted at the SPIRE Server API socket path.</li>
         <li><strong>External access:</strong> the demo dashboard is exposed on port <code>8080</code> in most scenarios so you can inspect SPIRE state from a browser.</li>
       </ul>
@@ -144,12 +155,12 @@
       </ul>
 
       <h2>Hub-and-Spoke Networking</h2>
-      <p>A common production topology keeps the centralized SPIRE Server in a datacenter or cloud environment while agents run on distributed VMs and physical machines across remote sites.</p>
+      <p>A common production topology keeps the centralized SPIRE Server in a datacenter or cloud environment while agents run on distributed VMs and physical machines across remote sites. All connections are agent-initiated outbound. No VPN tunnels or reverse connections are needed.</p>
       <ul>
-        <li><strong>Outbound only from agents:</strong> agents need only outbound TCP access to <code>server:8081</code>, so no inbound ports are required on agent machines.</li>
-        <li><strong>Restricted network compatibility:</strong> the control channel works through NAT, corporate proxies with HTTP CONNECT support, and VPN tunnels.</li>
-        <li><strong>Minimal firewall surface:</strong> in very restrictive environments, only port <code>8081</code> needs to be allowed outbound from agent hosts.</li>
-        <li><strong>Load balancers:</strong> SPIRE v1.15.0 supports PROXY protocol for deployments behind compatible load balancers.</li>
+        <li><strong>Outbound only from agents:</strong> agents initiate gRPC connections to <code>server:8081</code>. No inbound ports are required on agent machines. The server passively listens and never dials agents. <a href="https://spiffe.io/docs/latest/spire-about/spire-concepts/#all-about-the-agent">[SPIFFE Docs: Agent]</a></li>
+        <li><strong>NAT and firewall friendly:</strong> since connections are outbound from agent to server, they work through NAT gateways and firewalls without special configuration.</li>
+        <li><strong>Minimal firewall surface:</strong> in very restrictive environments, only port <code>8081</code> needs to be allowed outbound from agent hosts to the server address.</li>
+        <li><strong>Load balancers:</strong> SPIRE v1.15.0 supports PROXY protocol for deployments behind compatible load balancers. <a href="https://github.com/spiffe/spire/blob/v1.15.0/doc/spire_server.md">[Server config reference]</a></li>
       </ul>
 
       <h2>Handling Unstable Connectivity</h2>

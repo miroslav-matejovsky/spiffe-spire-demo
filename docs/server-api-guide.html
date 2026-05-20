@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server API Guide - SPIFFE/SPIRE Guide</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>SPIFFE/SPIRE Guide</h2>
+      <div class="version">SPIRE v1.15.0</div>
+    </div>
+    <nav>
+      <div class="nav-section">Getting Started</div>
+      <a href="index.html">Home</a>
+      <a href="introduction.html">Introduction</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="concepts.html">Core Concepts</a>
+      <div class="nav-section">Operations</div>
+      <a href="deployment.html">Deployment</a>
+      <a href="networking.html">Networking &amp; Security</a>
+      <a href="configuration.html">Configuration</a>
+      <div class="nav-section">Developer Guides</div>
+      <a href="developer-guide.html">Workload API Guide</a>
+      <a href="server-api-guide.html" class="active">Server API Guide</a>
+      <div class="nav-section">Practice</div>
+      <a href="scenarios.html">Hands-on Scenarios</a>
+      <a href="production.html">Production Guide</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="https://spiffe.io/docs/latest/">Official SPIFFE Docs &#8599;</a>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="breadcrumb">
+        <a href="index.html">Home</a><span class="sep">&gt;</span><span>Server API Guide</span>
+      </div>
+
+      <h1>Server API Guide</h1>
+      <p>Use SPIRE Server API when you need to manage registration entries, agents, bundles, and other control-plane state. It is an administrative interface for SPIRE itself, not the API workloads use to fetch identity. <a href="https://spiffe.io/docs/latest/deploying/spire_server/">Server config reference</a></p>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Overview</div>
+        <p>The API is normally reached over a local Unix Domain Socket at <code>/tmp/spire-server/private/api.sock</code> or a named pipe on Windows. It is not exposed over the network by default, which is a deliberate security choice because this socket can create, update, and delete trusted identity state. <a href="https://spiffe.io/docs/latest/deploying/spire_server/">Official docs</a></p>
+      </div>
+
+      <div class="callout callout-tip">
+        <div class="callout-title">Primary interface</div>
+        <p><code>spire-server</code> CLI is the usual operator entry point, while automation and dashboards can talk to the same API over gRPC. For generated clients and proto packages, use the official <a href="https://github.com/spiffe/spire-api-sdk">SPIRE API SDK</a>.</p>
+      </div>
+
+      <h2>Server API vs Workload API</h2>
+      <p>These two APIs sit at different trust boundaries and solve different problems. The Server API manages SPIRE state. The Workload API delivers identity material to workloads without long-lived secrets. <a href="https://spiffe.io/docs/latest/spire-about/spire-concepts/">SPIRE concepts</a></p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th>Server API</th>
+            <th>Workload API</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Purpose</td>
+            <td>Manage SPIRE (entries, agents, bundles)</td>
+            <td>Deliver identity to workloads</td>
+          </tr>
+          <tr>
+            <td>Access</td>
+            <td>Administrative - restricted</td>
+            <td>Any authorized workload</td>
+          </tr>
+          <tr>
+            <td>Transport</td>
+            <td>Unix socket / named pipe to server</td>
+            <td>Unix socket / named pipe to agent</td>
+          </tr>
+          <tr>
+            <td>Authentication</td>
+            <td>Admin socket requires local access</td>
+            <td>Workload attestation (no secrets needed)</td>
+          </tr>
+          <tr>
+            <td>Users</td>
+            <td>Operators, automation, dashboards</td>
+            <td>Application code</td>
+          </tr>
+          <tr>
+            <td>Location</td>
+            <td>Co-located with SPIRE Server</td>
+            <td>Co-located with SPIRE Agent</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>CLI-based management</h2>
+      <p>Most day-to-day administration starts with <code>spire-server</code>. The CLI wraps Server API operations and stays easiest for manual workflows, incident response, and bootstrap scripts. <a href="https://spiffe.io/docs/latest/deploying/spire_server/#spire-server-cli-reference">CLI reference</a></p>
+
+      <h3>Registration entry management</h3>
+      <p>Registration entries bind selectors to SPIFFE IDs and define who is allowed to receive which SVIDs. <a href="https://spiffe.io/docs/latest/spire-about/spire-concepts/">Concepts</a></p>
+      <pre><code class="language-bash"># Create a registration entry
+spire-server entry create \
+    -spiffeID spiffe://example.org/my-workload \
+    -parentID spiffe://example.org/agent \
+    -selector unix:uid:1000
+
+# List entries
+spire-server entry show
+
+# Delete an entry
+spire-server entry delete -entryID &lt;entry-id&gt;
+
+# Update an entry
+spire-server entry update \
+    -entryID &lt;entry-id&gt; \
+    -spiffeID spiffe://example.org/my-workload \
+    -selector unix:uid:1000 \
+    -selector unix:path:/usr/bin/myapp</code></pre>
+
+      <h3>Agent management</h3>
+      <p>Agent operations cover bootstrap, inventory, and cleanup. Join tokens are common in demos, but production often uses stronger node attestors. <a href="https://spiffe.io/docs/latest/deploying/spire_server/#spire-server-cli-reference">CLI reference</a></p>
+      <pre><code class="language-bash"># Generate a join token
+spire-server token generate -spiffeID spiffe://example.org/agent-host1
+
+# List agents
+spire-server agent list
+
+# Evict an agent
+spire-server agent evict -spiffeID spiffe://example.org/agent-host1</code></pre>
+
+      <h3>Bundle management</h3>
+      <p>Bundles contain trust anchors for local or federated trust domains. Server operators inspect and publish them through the same administrative surface. <a href="https://spiffe.io/docs/latest/spire-about/spire-concepts/">SPIRE concepts</a></p>
+      <pre><code class="language-bash"># Show current bundle
+spire-server bundle show
+
+# Set a federated bundle
+spire-server bundle set -id spiffe://partner.org -path /path/to/partner-bundle.pem</code></pre>
+
+      <div class="callout callout-warning">
+        <div class="callout-title">Operator caution</div>
+        <p>Entry changes take effect immediately for issuance and authorization behavior. Treat CLI access like cluster-admin access and keep shell history, automation logs, and socket permissions under control. <a href="https://spiffe.io/docs/latest/deploying/spire_server/">Server config reference</a></p>
+      </div>
+
+      <h2>Programmatic access in Go</h2>
+      <p>For services and tooling, use gRPC clients generated from the official <a href="https://github.com/spiffe/spire-api-sdk">SPIRE API SDK</a>. This is how dashboards, operators, and automation jobs can create or inspect entries without shelling out to the CLI.</p>
+
+      <h3>Using the SPIRE API SDK</h3>
+      <p>Connect to the local Server API socket, then use typed clients such as <code>EntryClient</code>, <code>AgentClient</code>, and <code>BundleClient</code>. <a href="https://github.com/spiffe/spire-api-sdk/tree/main/proto/spire/api/server">Server proto definitions</a></p>
+      <pre><code class="language-go">package main
+
+import (
+    "context"
+    "log"
+
+    entryv1 "github.com/spiffe/spire-api-sdk/proto/spire/api/server/entry/v1"
+    "github.com/spiffe/spire-api-sdk/proto/spire/api/types"
+    "google.golang.org/grpc"
+    "google.golang.org/grpc/credentials/insecure"
+)
+
+func main() {
+    ctx := context.Background()
+
+    conn, err := grpc.Dial(
+        "unix:///tmp/spire-server/private/api.sock",
+        grpc.WithTransportCredentials(insecure.NewCredentials()),
+    )
+    if err != nil {
+        log.Fatalf("failed to connect: %v", err)
+    }
+    defer conn.Close()
+
+    entryClient := entryv1.NewEntryClient(conn)
+
+    _, err = entryClient.BatchCreateEntry(ctx, &entryv1.BatchCreateEntryRequest{
+        Entries: []*types.Entry{
+            {
+                SpiffeId: &types.SPIFFEID{
+                    TrustDomain: "example.org",
+                    Path:        "/my-workload",
+                },
+                ParentId: &types.SPIFFEID{
+                    TrustDomain: "example.org",
+                    Path:        "/agent",
+                },
+                Selectors: []*types.Selector{
+                    {Type: "unix", Value: "uid:1000"},
+                },
+            },
+        },
+    })
+    if err != nil {
+        log.Fatalf("failed to create entry: %v", err)
+    }
+}</code></pre>
+
+      <h3>Listing entries</h3>
+      <p>List operations are useful for inventory views, reconciliation loops, and dashboards that display current SPIRE state. <a href="https://github.com/spiffe/spire-api-sdk/tree/main/proto/spire/api/server">Server proto definitions</a></p>
+      <pre><code class="language-go">listResp, err := entryClient.ListEntries(ctx, &amp;entryv1.ListEntriesRequest{})
+if err != nil {
+    log.Fatalf("failed to list entries: %v", err)
+}
+
+for _, entry := range listResp.Entries {
+    fmt.Printf("ID: %s, SPIFFE ID: spiffe://%s%s\n",
+        entry.Id,
+        entry.SpiffeId.TrustDomain,
+        entry.SpiffeId.Path)
+}</code></pre>
+
+      <div class="callout callout-tip">
+        <div class="callout-title">Windows note</div>
+        <p>On Windows, the Server API uses a named pipe instead of a Unix socket. The gRPC client pattern stays same, but transport setup must dial the named pipe endpoint configured for SPIRE Server. <a href="https://spiffe.io/docs/latest/deploying/spire_server/">Server config reference</a></p>
+      </div>
+
+      <h2>C# and .NET programmatic access</h2>
+      <p>Like the Workload API case, there is no official first-party .NET SDK for the Server API. Standard approach is to generate gRPC clients from the proto files in <a href="https://github.com/spiffe/spire-api-sdk/tree/main/proto/spire/api/server">spire-api-sdk/proto/spire/api/server</a>, then connect over a Unix socket or named pipe.</p>
+      <pre><code class="language-csharp">using System.Net.Sockets;
+using Grpc.Net.Client;
+
+var socketPath = "/tmp/spire-server/private/api.sock";
+var udsEndPoint = new UnixDomainSocketEndPoint(socketPath);
+
+var handler = new SocketsHttpHandler
+{
+    ConnectCallback = async (context, ct) =&gt;
+    {
+        var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+        await socket.ConnectAsync(udsEndPoint, ct);
+        return new NetworkStream(socket, ownsSocket: true);
+    }
+};
+
+using var channel = GrpcChannel.ForAddress("http://localhost", new GrpcChannelOptions
+{
+    HttpHandler = handler
+});
+
+var entryClient = new Entry.EntryClient(channel);
+
+var response = await entryClient.ListEntriesAsync(new ListEntriesRequest());
+foreach (var entry in response.Entries)
+{
+    Console.WriteLine($"SPIFFE ID: spiffe://{entry.SpiffeId.TrustDomain}{entry.SpiffeId.Path}");
+}</code></pre>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Proto source</div>
+        <p>Generate only the services you need first, usually entry, agent, and bundle APIs. That keeps generated code small and easier to version with your service or internal admin tool. <a href="https://github.com/spiffe/spire-api-sdk/tree/main/proto/spire/api/server">Server proto definitions</a></p>
+      </div>
+
+      <h2>Building services with SVID-based authentication</h2>
+      <p>Common pattern is a central service running near SPIRE Server while remote workloads run on agent-managed machines. Each remote workload authenticates with an SVID obtained from its local SPIRE Agent, and the central service validates that identity during mTLS before authorizing access. <a href="https://pkg.go.dev/github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig">TLS config helpers</a></p>
+
+      <ul>
+        <li>Central service gets its own SVID from the Workload API.</li>
+        <li>Clients on other machines get their own SVIDs from their local agents.</li>
+        <li>mTLS proves service identity on both sides.</li>
+        <li>Authorization uses SPIFFE IDs, not hostnames, API keys, or shared secrets.</li>
+      </ul>
+
+      <pre><code class="language-go">package main
+
+import (
+    "context"
+    "fmt"
+    "log"
+    "net/http"
+
+    "github.com/spiffe/go-spiffe/v2/spiffeid"
+    "github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
+    "github.com/spiffe/go-spiffe/v2/workloadapi"
+)
+
+const workloadAPISocket = "unix:///tmp/spire-agent/public/api.sock"
+
+type clientIDContextKey struct{}
+
+func main() {
+    ctx := context.Background()
+
+    x509Source, err := workloadapi.NewX509Source(
+        ctx,
+        workloadapi.WithClientOptions(workloadapi.WithAddr(workloadAPISocket)),
+    )
+    if err != nil {
+        log.Fatalf("create X509 source: %v", err)
+    }
+    defer x509Source.Close()
+
+    serverSVID, err := x509Source.GetX509SVID()
+    if err != nil {
+        log.Fatalf("fetch server SVID: %v", err)
+    }
+
+    trustDomain := spiffeid.RequireTrustDomainFromString("example.org")
+    allowedIDs := []spiffeid.ID{
+        spiffeid.RequireFromString("spiffe://example.org/payments-client"),
+        spiffeid.RequireFromString("spiffe://example.org/reporting-client"),
+    }
+
+    responses := map[spiffeid.ID]string{
+        allowedIDs[0]: "payments export",
+        allowedIDs[1]: "reporting snapshot",
+    }
+
+    tlsConfig := tlsconfig.MTLSServerConfig(
+        x509Source,
+        x509Source,
+        tlsconfig.AuthorizeMemberOf(trustDomain),
+    )
+
+    mux := http.NewServeMux()
+    mux.Handle("/data", spiffeAuthMiddleware(allowedIDs, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        clientID := r.Context().Value(clientIDContextKey{}).(spiffeid.ID)
+        fmt.Fprintf(w, "server=%s\nclient=%s\ndata=%s\n", serverSVID.ID, clientID, responses[clientID])
+    })))
+
+    server := &amp;http.Server{
+        Addr:      ":8443",
+        Handler:   mux,
+        TLSConfig: tlsConfig,
+    }
+
+    log.Printf("serving as %s on https://0.0.0.0:8443", serverSVID.ID)
+    log.Fatal(server.ListenAndServeTLS("", ""))
+}
+
+func spiffeAuthMiddleware(allowedIDs []spiffeid.ID, next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        if r.TLS == nil || len(r.TLS.PeerCertificates) == 0 {
+            http.Error(w, "no client certificate", http.StatusUnauthorized)
+            return
+        }
+
+        if len(r.TLS.PeerCertificates[0].URIs) == 0 {
+            http.Error(w, "missing SPIFFE ID", http.StatusUnauthorized)
+            return
+        }
+
+        clientID, err := spiffeid.FromURI(r.TLS.PeerCertificates[0].URIs[0])
+        if err != nil {
+            http.Error(w, "invalid SPIFFE ID", http.StatusUnauthorized)
+            return
+        }
+
+        for _, allowed := range allowedIDs {
+            if clientID == allowed {
+                ctx := context.WithValue(r.Context(), clientIDContextKey{}, clientID)
+                next.ServeHTTP(w, r.WithContext(ctx))
+                return
+            }
+        }
+
+        http.Error(w, "unauthorized SPIFFE ID", http.StatusForbidden)
+    })
+}</code></pre>
+
+      <div class="callout callout-tip">
+        <div class="callout-title">Why pattern works</div>
+        <p>SPIRE handles issuance and rotation, mTLS proves both peers, and application code only has to map SPIFFE IDs to policy. That makes authorization stable even when certificates rotate. <a href="https://pkg.go.dev/github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig">go-spiffe TLS helpers</a></p>
+      </div>
+
+      <h2>Connection to repository scenarios</h2>
+      <p>This repository already demonstrates both sides of the model, from server-side administration to workload-side SVID consumption.</p>
+      <ul>
+        <li><strong>Scenario 02 - Dashboard:</strong> shows Server API usage for reading SPIRE state and presenting agents, entries, and bundles.</li>
+        <li><strong>Scenario 03 - Workload:</strong> shows workload registration through <code>spire-server</code> CLI.</li>
+        <li><strong>Scenario 05 - SVID API:</strong> shows mTLS services built on SVIDs and SPIFFE-ID-based authorization.</li>
+      </ul>
+      <p>For a concrete Go example of Server API usage, start with the dashboard container in <code>dashboard/</code>, then inspect the implementation in <code>cmd/dashboard/</code>, which creates typed gRPC clients for the entry, agent, and bundle APIs.</p>
+
+      <h2>Security considerations</h2>
+      <ul>
+        <li>Server API socket is admin-level access. Protect it with strict filesystem permissions and process isolation. <a href="https://spiffe.io/docs/latest/deploying/spire_server/#server-configuration-file">Server configuration file</a></li>
+        <li>Never expose Server API directly over the network unless you add a separate authentication and authorization layer in front of it.</li>
+        <li>Delegated Identity API allows agents to fetch SVIDs on behalf of workloads when architecture requires that separation. <a href="https://spiffe.io/docs/latest/spire-about/spire-concepts/">SPIRE concepts</a></li>
+        <li><code>admin_socket_path</code> enables elevated local access. Keep it even more tightly controlled than read-only or app-facing sockets. <a href="https://spiffe.io/docs/latest/deploying/spire_server/#server-configuration-file">Server configuration file</a></li>
+      </ul>
+
+      <div class="callout callout-danger">
+        <div class="callout-title">Do not treat Server API like app API</div>
+        <p>Server API can change trust relationships for whole environment. If a workload only needs its own SVID or trust bundle, use Workload API instead. Reserve Server API for operators, dashboards, and tightly controlled automation.</p>
+      </div>
+
+      <h2>Reference links</h2>
+      <ul>
+        <li><a href="https://github.com/spiffe/spire-api-sdk">SPIRE API SDK</a></li>
+        <li><a href="https://spiffe.io/docs/latest/deploying/spire_server/">Server config reference</a></li>
+        <li><a href="https://github.com/spiffe/spire-api-sdk/tree/main/proto/spire/api/server">Server proto definitions</a></li>
+        <li><a href="https://spiffe.io/docs/latest/spire-about/spire-concepts/">SPIRE concepts</a></li>
+        <li><a href="https://pkg.go.dev/github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig">TLS config helpers</a></li>
+      </ul>
+
+      <div class="page-nav">
+        <a href="developer-guide.html" class="prev">
+          <span class="label">Previous</span>
+          <span class="title">Workload API Guide</span>
+        </a>
+        <a href="scenarios.html" class="next">
+          <span class="label">Next</span>
+          <span class="title">Hands-on Scenarios</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
