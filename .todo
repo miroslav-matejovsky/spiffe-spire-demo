@@ -1,0 +1,3 @@
+# Docs
+
+- in the architecture diagram use also windows named pipes in addition to Unix Domain Sockets, to show that both are supported and can be used in different environments.
