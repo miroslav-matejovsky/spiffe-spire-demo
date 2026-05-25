@@ -78,6 +78,13 @@ tasks:
     desc: Run Go tests
     cmds:
       - go test ./...
+  
+  all:
+    desc: Run all tasks
+    cmds:
+      - task lint
+      - task test
+      - task build
 
 # ---- running stuff ----
 

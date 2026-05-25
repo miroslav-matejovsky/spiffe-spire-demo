@@ -131,8 +131,13 @@ body {
 }
 
 .sidebar-footer a {
+  display: block;
   color: var(--sidebar-text);
   text-decoration: none;
+}
+
+.sidebar-footer a + a {
+  margin-top: 8px;
 }
 
 .sidebar-footer a:hover {

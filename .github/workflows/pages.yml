@@ -29,6 +29,9 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v6
 
+      - name: Filter AGENTS.md out of documentation
+        run: rm -f docs/AGENTS.md
+    
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:
