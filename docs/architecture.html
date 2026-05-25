@@ -21,6 +21,8 @@
       <a href="concepts.html">Core Concepts</a>
       <div class="nav-section">Operations</div>
       <a href="deployment.html">Deployment</a>
+      <a href="deployment-hybrid.html">Hybrid Deployment</a>
+      <a href="deployment-onprem.html">On-Premises Deployment</a>
       <a href="networking.html">Networking &amp; Security</a>
       <a href="configuration.html">Configuration</a>
       <div class="nav-section">Developer Guides</div>
@@ -56,7 +58,7 @@
         </div>
         <div class="card">
           <h3>SPIRE Agent</h3>
-          <p>Attests node, caches workload SVIDs, and exposes local APIs over Unix sockets <a href="https://spiffe.io/docs/latest/deploying/spire_agent/">[Agent config ref]</a>.</p>
+          <p>Attests node, caches workload SVIDs, and exposes local APIs over Unix sockets (Linux) or named pipes (Windows) <a href="https://spiffe.io/docs/latest/deploying/spire_agent/">[Agent config ref]</a>.</p>
         </div>
         <div class="card">
           <h3>Workload API</h3>
@@ -101,7 +103,7 @@
 
           <line x1="400" y1="405" x2="400" y2="365" stroke="#475569" stroke-width="3" marker-end="url(#arrow)"></line>
           <text x="420" y="384" font-size="16" font-weight="600" fill="#334155">Workload API</text>
-          <text x="420" y="403" font-size="14" fill="#64748b">Unix Domain Socket</text>
+          <text x="420" y="403" font-size="14" fill="#64748b">Unix Domain Socket / Named Pipe</text>
 
           <rect x="120" y="410" width="160" height="62" rx="12" fill="#fff7ed" stroke="#d97706" stroke-width="3"></rect>
           <rect x="320" y="410" width="160" height="62" rx="12" fill="#fff7ed" stroke="#d97706" stroke-width="3"></rect>
@@ -125,7 +127,7 @@
       </ul>
       <div class="callout callout-tip">
         <div class="callout-title">Plugin model</div>
-        <p>Server behavior comes from plugins. Common choices are DataStore <code>sql</code>, KeyManager <code>memory</code>, <code>disk</code>, or <code>aws_kms</code>, NodeAttestor <code>join_token</code>, <code>x509pop</code>, <code>aws_iid</code>, or <code>k8s_psat</code>, and UpstreamAuthority <code>disk</code>, <code>vault</code>, or <code>aws_pca</code> <a href="https://spiffe.io/docs/latest/deploying/spire_server/">[Server plugin ref]</a>.</p>
+        <p>Server behavior comes from plugins. Common choices are DataStore <code>sql</code>, KeyManager <code>memory</code>, <code>disk</code>, <code>aws_kms</code>, or <code>azure_key_vault</code>, NodeAttestor <code>join_token</code>, <code>x509pop</code>, <code>aws_iid</code>, <code>azure_msi</code>, <code>azure_imds</code>, or <code>k8s_psat</code>, and UpstreamAuthority <code>disk</code>, <code>vault</code>, or <code>aws_pca</code> <a href="https://spiffe.io/docs/latest/deploying/spire_server/">[Server plugin ref]</a>.</p>
       </div>
       <p>In repo, Scenario 01 shows bare server and agent bootstrap. Scenario 02 adds dashboard flow around same core server responsibilities.</p>
 
@@ -136,17 +138,17 @@
         <li>Performs node attestation to prove identity to server.</li>
         <li>Caches SVIDs for workloads so applications can fetch them locally.</li>
         <li>Caches SVIDs locally so workloads continue to operate even when connectivity to the central server is intermittent or temporarily unavailable.</li>
-        <li>Exposes Workload API as Unix Domain Socket.</li>
+        <li>Exposes Workload API as Unix Domain Socket (Linux/macOS) or Windows Named Pipe (Windows) <a href="https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_Endpoint.md">[Workload Endpoint spec]</a>.</li>
         <li>Performs workload attestation by checking PID, UID, process path, or service identity <a href="https://spiffe.io/docs/latest/spire-about/spire-concepts/#workload-attestation">[Workload attestation]</a>.</li>
       </ul>
       <div class="callout callout-info">
         <div class="callout-title">Agent plugins</div>
-        <p>Agent also uses plugins: NodeAttestor for proving node identity, WorkloadAttestor plugins such as <code>unix</code>, <code>k8s</code>, or <code>docker</code>, and KeyManager plugins for workload private keys <a href="https://spiffe.io/docs/latest/deploying/spire_agent/">[Agent plugin ref]</a>.</p>
+        <p>Agent also uses plugins: NodeAttestor for proving node identity, WorkloadAttestor plugins such as <code>unix</code>, <code>k8s</code>, <code>docker</code>, or <code>windows</code>, and KeyManager plugins for workload private keys <a href="https://spiffe.io/docs/latest/deploying/spire_agent/">[Agent plugin ref]</a>.</p>
       </div>
       <p>In repo, Scenario 01 shows basic node bootstrap. Scenario 03 focuses on workload attestation and local identity delivery through agent.</p>
 
       <h2>Workload API</h2>
-      <p>Workload API is SPIFFE standard API for applications. It is exposed by agent as Unix Domain Socket, typically at <code>/tmp/spire-agent/public/api.sock</code>. Applications do not parse agent cache directly. They call API methods such as <code>FetchX509SVID</code>, <code>FetchJWTSVID</code>, and bundle fetch operations.</p>
+      <p>Workload API is SPIFFE standard API for applications. It is exposed by agent as Unix Domain Socket on Linux/macOS or Windows Named Pipe on Windows, typically at <code>/tmp/spire-agent/public/api.sock</code> on Linux or <code>\\.\pipe\spire-agent\public\api</code> on Windows. Applications do not parse agent cache directly. They call API methods such as <code>FetchX509SVID</code>, <code>FetchJWTSVID</code>, and bundle fetch operations.</p>
       <pre><code>Workload --unix socket--&gt; SPIRE Agent Workload API
 
 Common calls:
@@ -157,7 +159,7 @@ Common calls:
       <p><a href="https://github.com/spiffe/go-spiffe">go-spiffe</a> wraps API for Go applications and handles watchers, source updates, and identity parsing. Agent also pushes updated SVIDs before expiry so workloads get auto-rotation without restart. Scenario 05 in repo demonstrates this model with mTLS client and server.</p>
       <div class="callout callout-warning">
         <div class="callout-title">Why local socket matters</div>
-        <p>Workloads only need access to local agent socket. This is especially important for machines with limited or intermittent server connectivity. The agent's local cache ensures workloads can fetch and use valid SVIDs even during server outages or network disruptions. Workloads never need direct access to the central SPIRE server. Identity checks stay tied to local process context.</p>
+        <p>Workloads only need access to local agent socket or named pipe. This is especially important for machines with limited or intermittent server connectivity. The agent's local cache ensures workloads can fetch and use valid SVIDs even during server outages or network disruptions. Workloads never need direct access to the central SPIRE server. Identity checks stay tied to local process context.</p>
       </div>
 
       <h2>SVID Issuance Flow</h2>
@@ -224,22 +226,22 @@ Common calls:
           <tr>
             <td>KeyManager</td>
             <td>Creates and stores signing keys or workload keys.</td>
-            <td><code>memory</code>, <code>disk</code>, <code>aws_kms</code></td>
+            <td><code>memory</code>, <code>disk</code>, <code>aws_kms</code>, <code>azure_key_vault</code></td>
           </tr>
           <tr>
             <td>NodeAttestor</td>
             <td>Verifies node identity before issuing agent SVID.</td>
-            <td><code>join_token</code>, <code>x509pop</code>, <code>aws_iid</code>, <code>k8s_psat</code></td>
+            <td><code>join_token</code>, <code>x509pop</code>, <code>aws_iid</code>, <code>azure_msi</code>, <code>azure_imds</code>, <code>k8s_psat</code></td>
           </tr>
           <tr>
             <td>WorkloadAttestor</td>
             <td>Maps local process or container properties to selectors.</td>
-            <td><code>unix</code>, <code>systemd</code>, <code>docker</code></td>
+            <td><code>unix</code>, <code>systemd</code>, <code>docker</code>, <code>windows</code></td>
           </tr>
           <tr>
             <td>UpstreamAuthority</td>
             <td>Signs SPIRE CA with external or higher-level CA.</td>
-            <td><code>disk</code>, <code>vault</code>, <code>aws_pca</code></td>
+            <td><code>disk</code>, <code>vault</code>, <code>aws_pca</code>, <code>gcp_cas</code></td>
           </tr>
           <tr>
             <td>Notifier</td>
