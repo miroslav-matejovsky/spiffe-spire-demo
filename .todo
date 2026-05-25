@@ -1,6 +1,0 @@
-# docs improvements
-
-- (DONE) add link to the git repository in the /docs (https://github.com/miroslav-matejovsky/spiffe-spire-demo) - added to sidebar footer on all pages
-- (DONE) arrows in architecture diagram are inverted - reversed to point from client to server, added direction note in caption
-- (DONE) `Node Attestor` and `Upstream authority` split into two rows in diagram, also fixed `WorkloadAttestor` in agent section
-- (DONE) Business Application Integration section added to architecture page with diagram showing server/client machines, responsibility boundary table, step-by-step flow, and cross-reference to Scenario 05
