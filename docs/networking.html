@@ -21,6 +21,8 @@
       <a href="concepts.html">Core Concepts</a>
       <div class="nav-section">Operations</div>
       <a href="deployment.html">Deployment</a>
+      <a href="deployment-hybrid.html">Hybrid Deployment</a>
+      <a href="deployment-onprem.html">On-Premises Deployment</a>
       <a href="networking.html" class="active">Networking &amp; Security</a>
       <a href="configuration.html">Configuration</a>
       <div class="nav-section">Developer Guides</div>
@@ -137,13 +139,13 @@
         </tbody>
       </table>
 
-      <h2>Unix Domain Sockets</h2>
-      <p>Two sockets matter most in the demo environments:</p>
+      <h2>Local IPC: Unix Domain Sockets and Named Pipes</h2>
+      <p>Two local IPC endpoints matter most in SPIRE deployments. On Linux, these are Unix Domain Sockets. On Windows, SPIRE uses named pipes instead.</p>
       <ul>
-        <li><strong>Server API socket:</strong> <code>/tmp/spire-server/private/api.sock</code> for administrative and dashboard access to SPIRE Server APIs.</li>
-        <li><strong>Workload API socket:</strong> <code>/tmp/spire-agent/public/api.sock</code> in common SPIRE examples, or <code>/opt/spire/sockets/workload_api.sock</code> in these demos.</li>
+        <li><strong>Server API socket:</strong> <code>/tmp/spire-server/private/api.sock</code> (Linux) or <code>\\.\pipe\spire-server\private\api</code> (Windows) for administrative and dashboard access to SPIRE Server APIs.</li>
+        <li><strong>Workload API socket:</strong> <code>/tmp/spire-agent/public/api.sock</code> (Linux) or <code>\\.\pipe\spire-agent\public\api</code> (Windows). This repository uses <code>/opt/spire/sockets/workload_api.sock</code> in demos.</li>
       </ul>
-      <p>Containers share these sockets through named volumes. That is why the dashboard can talk to the server without opening a remote admin port, and why demo workloads can fetch SVIDs without using the network.</p>
+      <p>On Linux, containers share these sockets through named volumes. On Windows, named pipes are accessible by name to processes on the same machine. That is why the dashboard can talk to the server without opening a remote admin port, and why demo workloads can fetch SVIDs without using the network.</p>
       <p>Applications usually discover the workload socket through the <code>SPIFFE_ENDPOINT_SOCKET</code> environment variable or an explicit socket path in configuration.</p>
 
       <h2>Firewall Rules</h2>
@@ -152,7 +154,7 @@
         <li><strong>Agents:</strong> allow outbound traffic to <code>server:8081</code>.</li>
         <li><strong>Dashboard:</strong> allow inbound <code>8080</code> only if you intentionally expose the web UI.</li>
         <li><strong>Metrics:</strong> allow <code>8088</code>, <code>8089</code>, and <code>9090</code> only on your monitoring network or within the container network.</li>
-        <li><strong>Workload API:</strong> no firewall ports are needed because it is a Unix socket, not a TCP listener.</li>
+        <li><strong>Workload API:</strong> no firewall ports are needed because it is a Unix socket (Linux) or named pipe (Windows), not a TCP listener. On Windows, protect named pipe access with Windows ACLs.</li>
       </ul>
 
       <h2>Hub-and-Spoke Networking</h2>

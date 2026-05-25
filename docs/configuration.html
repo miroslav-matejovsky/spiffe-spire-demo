@@ -21,6 +21,8 @@
       <a href="concepts.html">Core Concepts</a>
       <div class="nav-section">Operations</div>
       <a href="deployment.html">Deployment</a>
+      <a href="deployment-hybrid.html">Hybrid Deployment</a>
+      <a href="deployment-onprem.html">On-Premises Deployment</a>
       <a href="networking.html">Networking &amp; Security</a>
       <a href="configuration.html" class="active">Configuration</a>
       <div class="nav-section">Developer Guides</div>
@@ -185,7 +187,10 @@ telemetry {
       <ul>
         <li><code>memory</code> for quick demos and ephemeral lab runs</li>
         <li><code>disk</code> for simple persistent storage</li>
-        <li><code>aws_kms</code> when you want hardware-backed or managed key storage in production</li>
+        <li><code>aws_kms</code> when you want hardware-backed or managed key storage in AWS production</li>
+        <li><code>azure_key_vault</code> for Azure deployments with Managed HSM or standard Key Vault (built-in since v1.8.0, Managed HSM support since v1.15.0) <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_server_keymanager_azure_key_vault.md">[azure_key_vault plugin]</a></li>
+        <li><code>gcp_kms</code> for Google Cloud deployments</li>
+        <li><code>hashicorp_vault</code> for centralized secrets management with HashiCorp Vault (v1.15.0+)</li>
       </ul>
       <pre><code>KeyManager "disk" {
     plugin_data {
@@ -197,6 +202,13 @@ KeyManager "aws_kms" {
     plugin_data {
         region = "eu-central-1"
         key_id = "arn:aws:kms:..."
+    }
+}
+
+KeyManager "azure_key_vault" {
+    plugin_data {
+        key_vault_uri = "https://my-vault.vault.azure.net/"
+        key_identifier_file = "/opt/spire/data/server/azure_key_id"
     }
 }</code></pre>
 
@@ -216,6 +228,24 @@ NodeAttestor "aws_iid" {
     plugin_data {
         access_key_id = "example"
         secret_access_key = "example"
+    }
+}
+
+NodeAttestor "azure_msi" {
+    plugin_data {
+        tenants = {
+            "&lt;tenant-id&gt;" = {}
+        }
+    }
+}
+
+NodeAttestor "azure_imds" {
+    plugin_data {
+        tenants = {
+            "&lt;tenant-id&gt;" = {
+                resource_groups = ["my-rg"]
+            }
+        }
     }
 }
 
@@ -320,7 +350,7 @@ UpstreamAuthority "spire" {
 
       <div class="callout callout-info">
         <div class="callout-title">Windows Workload API</div>
-        <p>On Windows, use <code>named_pipe_name</code> (e.g., <code>\\spire-agent\\public\\api</code>) instead of <code>socket_path</code>. The agent exposes the Workload API through a Windows named pipe rather than a Unix domain socket.</p>
+        <p>On Windows, use <code>experimental { named_pipe_name = "\\spire-agent\\public\\api" }</code> instead of <code>socket_path</code>. The agent exposes the Workload API through a Windows named pipe rather than a Unix domain socket. Note: the <code>named_pipe_name</code> setting is still marked as experimental in SPIRE v1.15.0 <a href="https://github.com/spiffe/spire/blob/main/doc/spire_agent.md">[Agent config ref]</a>.</p>
       </div>
 
       <div class="callout callout-info">
@@ -405,8 +435,14 @@ WorkloadAttestor "docker" {
     plugin_data {
         docker_socket_path = "/var/run/docker.sock"
     }
+}
+
+WorkloadAttestor "windows" {
+    plugin_data {
+        discover_workload_path = true
+    }
 }</code></pre>
-      <p>For traditional services on VMs, the <code>unix</code> attestor matching by UID, GID, or binary path is the most common choice. On Windows, process-based attestation matches by SID or service identity.</p>
+      <p>For traditional services on Linux VMs, the <code>unix</code> attestor matching by UID, GID, or binary path is the most common choice. On Windows, use the <code>windows</code> attestor which matches by user SID, user name, group membership, executable path, or SHA256 hash <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_agent_workloadattestor_windows.md">[windows plugin docs]</a>.</p>
 
       <h3>KeyManager</h3>
       <pre><code>KeyManager "memory" {

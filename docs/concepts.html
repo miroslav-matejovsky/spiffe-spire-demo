@@ -21,6 +21,8 @@
       <a href="concepts.html" class="active">Core Concepts</a>
       <div class="nav-section">Operations</div>
       <a href="deployment.html">Deployment</a>
+      <a href="deployment-hybrid.html">Hybrid Deployment</a>
+      <a href="deployment-onprem.html">On-Premises Deployment</a>
       <a href="networking.html">Networking &amp; Security</a>
       <a href="configuration.html">Configuration</a>
       <div class="nav-section">Developer Guides</div>
@@ -201,6 +203,18 @@ spire-server entry create \
             <td>Strong</td>
           </tr>
           <tr>
+            <td><code>azure_msi</code></td>
+            <td>Azure VMs</td>
+            <td>Azure Managed Service Identity token <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_server_nodeattestor_azure_msi.md">[azure_msi plugin]</a></td>
+            <td>Strong</td>
+          </tr>
+          <tr>
+            <td><code>azure_imds</code></td>
+            <td>Azure VMs</td>
+            <td>Azure Instance Metadata Service, no managed identity required (v1.14.0+) <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_server_nodeattestor_azure_imds.md">[azure_imds plugin]</a></td>
+            <td>Strong</td>
+          </tr>
+          <tr>
             <td><code>k8s_psat</code></td>
             <td>Kubernetes</td>
             <td>Projected service account token bound to cluster issuer</td>
@@ -244,13 +258,18 @@ spire-server entry create \
             <td>Container-focused selector matching outside Kubernetes</td>
           </tr>
           <tr>
+            <td><code>windows</code></td>
+            <td><code>user_sid</code>, <code>user_name</code>, <code>group_sid</code>, <code>group_name</code>, <code>path</code>, <code>sha256</code></td>
+            <td>Primary choice for Windows services and workloads on Windows VMs or physical machines <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_agent_workloadattestor_windows.md">[windows plugin]</a></td>
+          </tr>
+          <tr>
             <td><code>k8s</code></td>
             <td>namespace, service account, pod labels, pod UID</td>
             <td>Optional choice for Kubernetes-native identity policy</td>
           </tr>
         </tbody>
       </table>
-      <p>Repo uses <code>unix</code> workload attestation in Scenario 03 and Scenario 05. Agent checks calling PID, UID, and process path on local socket before returning identity. For Windows services, agents can match workloads by process properties so long-running machine-based services still map cleanly to registration entries.</p>
+      <p>Repo uses <code>unix</code> workload attestation in Scenario 03 and Scenario 05. Agent checks calling PID, UID, and process path on local socket before returning identity. On Windows, use the <code>windows</code> attestor which matches workloads by user SID, user name, group membership, executable path, or SHA256 hash of the binary <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_agent_workloadattestor_windows.md">[windows plugin docs]</a>.</p>
 
       <h2>Certificate Rotation</h2>
       <p>SPIRE automates credential lifecycle. Agents monitor SVID expiry and renew before half-life, then push updates through Workload API streams so applications do not need manual reload logic. Rotation resilience also matters in conservative infrastructure: agent-managed local caches let workloads continue using valid SVIDs during temporary server disconnection, and agent renews them when connectivity is restored.</p>

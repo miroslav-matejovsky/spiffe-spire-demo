@@ -21,6 +21,8 @@
       <a href="concepts.html">Core Concepts</a>
       <div class="nav-section">Operations</div>
       <a href="deployment.html">Deployment</a>
+      <a href="deployment-hybrid.html">Hybrid Deployment</a>
+      <a href="deployment-onprem.html">On-Premises Deployment</a>
       <a href="networking.html">Networking &amp; Security</a>
       <a href="configuration.html">Configuration</a>
       <div class="nav-section">Developer Guides</div>
@@ -62,7 +64,7 @@
           <tr>
             <td>Key Management</td>
             <td>memory</td>
-            <td>disk, AWS KMS, Vault, Azure Key Vault</td>
+            <td>disk, AWS KMS, Azure Key Vault, GCP KMS, HashiCorp Vault</td>
           </tr>
           <tr>
             <td>Bootstrap</td>
@@ -140,13 +142,14 @@
       <ul>
         <li><code>disk</code>: minimum acceptable production baseline because keys survive restarts <a href="https://spiffe.io/docs/latest/deploying/spire_server/">[Server key manager ref]</a>.</li>
         <li><code>aws_kms</code>: HSM-backed option and strong default for AWS deployments <a href="https://spiffe.io/docs/latest/deploying/spire_server/">[Server key manager ref]</a>.</li>
-        <li><code>azure_key_vault</code>: Azure Managed HSM integration is available in SPIRE v1.15.0.</li>
-        <li><code>vault</code>: HashiCorp Vault Key Manager is new in SPIRE v1.15.0 and fits centralized secrets operations.</li>
+        <li><code>azure_key_vault</code>: Azure Key Vault integration, built-in since v1.8.0. Azure Managed HSM supported since v1.15.0 <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_server_keymanager_azure_key_vault.md">[azure_key_vault plugin]</a>.</li>
+        <li><code>gcp_kms</code>: Google Cloud KMS integration for GCP deployments.</li>
+        <li><code>hashicorp_vault</code>: HashiCorp Vault Key Manager, added in SPIRE v1.15.0, fits centralized secrets operations.</li>
       </ul>
 
       <h2>Upstream Authority (CA Integration)</h2>
       <p>A self-signed root is acceptable for isolated environments, but enterprise deployments usually connect SPIRE to an existing PKI. Use an <code>UpstreamAuthority</code> plugin when you need SPIRE server intermediates signed by a corporate or cloud CA.</p>
-      <p>Common options include <code>disk</code>, <code>aws_pca</code>, <code>vault</code>, <code>gcp_cas</code>, <code>spire</code> for nested SPIRE, and <code>cert-manager</code>.</p>
+      <p>Common options include <code>disk</code>, <code>aws_pca</code>, <code>vault</code>, <code>gcp_cas</code>, <code>spire</code> for nested SPIRE, and <code>cert-manager</code>. Note: there is no Azure UpstreamAuthority plugin in SPIRE. For Azure deployments, use <code>vault</code> (HashiCorp Vault) or <code>disk</code> with certificates from your enterprise PKI or Azure-managed CA.</p>
       <pre><code>plugins {
   UpstreamAuthority "vault" {
     plugin_data {
@@ -177,7 +180,7 @@ openssl req -x509 -new -key spire-root-ca.key -sha256 -days 3650 -out spire-root
       <ul>
         <li>For VM and physical machine environments, use <code>x509pop</code> (certificate-based) or <code>tpm_devid</code> (TPM hardware) for durable machine-bound identity. These work without cloud-provider metadata <a href="https://spiffe.io/docs/latest/spire-about/spire-concepts/#node-attestation">[Node attestation]</a>.</li>
         <li>Join tokens work well for initial bootstrapping of new machines but are single-use.</li>
-        <li>For agents running in cloud VMs, platform-native attestors like <code>aws_iid</code> or <code>gcp_iit</code> are also available, and <code>k8s_psat</code> fits Kubernetes-specific deployments.</li>
+        <li>For agents running in AWS VMs, use <code>aws_iid</code>. For Azure VMs, use <code>azure_msi</code> (requires managed identity) or <code>azure_imds</code> (v1.14.0+, does not require managed identity) <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_server_nodeattestor_azure_imds.md">[azure_imds plugin]</a>. For GCP VMs, use <code>gcp_iit</code>. For Kubernetes, use <code>k8s_psat</code>.</li>
         <li>Security note: the <code>aws_iid</code> PKCS7 path had a critical CVE fixed in v1.14.6, so keep attestation plugins current.</li>
       </ul>
 
@@ -210,11 +213,12 @@ openssl req -x509 -new -key spire-root-ca.key -sha256 -days 3650 -out spire-root
       <h2>Windows Agent Operations</h2>
       <ul>
         <li>Install SPIRE agent as a Windows service.</li>
-        <li>Use <code>named_pipe_name</code> for the Workload API instead of a Unix socket <a href="https://spiffe.io/docs/latest/deploying/spire_agent/">[Agent config ref]</a>.</li>
+        <li>Use <code>experimental { named_pipe_name = "\\spire-agent\\public\\api" }</code> for the Workload API instead of a Unix socket. Note: this setting is still experimental in v1.15.0 <a href="https://github.com/spiffe/spire/blob/main/doc/spire_agent.md">[Agent config ref]</a>.</li>
         <li>Put the agent data directory on persistent local disk such as <code>C:\spire\data</code>.</li>
         <li>Configure <code>log_format = "json"</code> and forward logs with your standard aggregation tool.</li>
         <li><code>x509pop</code> works well with machine certificates issued by Active Directory Certificate Services or another enterprise PKI.</li>
-        <li>Windows workload attestation can identify workloads by process SID or service identity.</li>
+        <li>For Azure VMs, use <code>azure_msi</code> or <code>azure_imds</code> node attestation instead of join tokens <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_server_nodeattestor_azure_imds.md">[azure_imds plugin]</a>.</li>
+        <li>Use the <code>windows</code> WorkloadAttestor plugin to identify workloads by Windows user SID, user name, group membership, executable path, or SHA256 hash <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_agent_workloadattestor_windows.md">[windows plugin]</a>.</li>
       </ul>
 
       <h2>Monitoring and Observability</h2>

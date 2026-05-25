@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hybrid Deployment - SPIFFE/SPIRE Guide</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>SPIFFE/SPIRE Guide</h2>
+      <div class="version">SPIRE v1.15.0</div>
+    </div>
+    <nav>
+      <div class="nav-section">Getting Started</div>
+      <a href="index.html">Home</a>
+      <a href="introduction.html">Introduction</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="concepts.html">Core Concepts</a>
+      <div class="nav-section">Operations</div>
+      <a href="deployment.html">Deployment</a>
+      <a href="deployment-hybrid.html" class="active">Hybrid Deployment</a>
+      <a href="deployment-onprem.html">On-Premises Deployment</a>
+      <a href="networking.html">Networking &amp; Security</a>
+      <a href="configuration.html">Configuration</a>
+      <div class="nav-section">Developer Guides</div>
+      <a href="developer-guide.html">Workload API Guide</a>
+      <a href="server-api-guide.html">Server API Guide</a>
+      <div class="nav-section">Practice</div>
+      <a href="scenarios.html">Hands-on Scenarios</a>
+      <a href="production.html">Production Guide</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="https://github.com/miroslav-matejovsky/spiffe-spire-demo">GitHub Repository &#8599;</a>
+      <a href="https://spiffe.io/docs/latest/">Official SPIFFE Docs &#8599;</a>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="breadcrumb">
+        <a href="index.html">Home</a><span class="sep">&gt;</span><a href="deployment.html">Deployment</a><span class="sep">&gt;</span><span>Hybrid Deployment</span>
+      </div>
+
+      <h1>Hybrid Deployment: Azure Server + Windows VM Agent</h1>
+      <p>Deploy SPIRE Server as a Linux container in Azure while running SPIRE Agents as Windows services on Windows VMs not connected to a domain. Business applications run as Windows services alongside the agent.</p>
+
+      <div class="callout callout-info">
+        <div class="callout-title">When to use this pattern</div>
+        <p>Use hybrid deployment when the centralized SPIRE Server runs in cloud infrastructure (Azure, AWS, or similar) and agents are distributed across Windows VMs in remote sites, branch offices, or standalone machines without Active Directory domain membership.</p>
+      </div>
+
+      <h2>Architecture Diagram</h2>
+      <div class="diagram">
+        <svg viewBox="0 0 800 520" width="800" height="520" role="img" aria-label="Hybrid deployment: Azure SPIRE Server with Windows VM agents">
+          <defs>
+            <marker id="arrow-h" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#475569"></path>
+            </marker>
+          </defs>
+
+          <!-- Azure Cloud Region -->
+          <rect x="20" y="10" width="360" height="280" rx="16" fill="#eff6ff" stroke="#2563eb" stroke-width="2" stroke-dasharray="8,4"></rect>
+          <text x="200" y="32" text-anchor="middle" font-size="14" font-weight="600" fill="#1e3a8a">Azure Cloud</text>
+
+          <!-- SPIRE Server (Linux Container) -->
+          <rect x="60" y="50" width="280" height="70" rx="12" fill="#eff6ff" stroke="#2563eb" stroke-width="2.5"></rect>
+          <text x="200" y="82" text-anchor="middle" font-size="18" font-weight="700" fill="#1e3a8a">SPIRE Server</text>
+          <text x="200" y="104" text-anchor="middle" font-size="13" fill="#3b82f6">(Linux container)</text>
+
+          <!-- SPIRE Agent (Linux Container for Business API) -->
+          <rect x="60" y="140" width="280" height="50" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="2"></rect>
+          <text x="200" y="170" text-anchor="middle" font-size="15" font-weight="600" fill="#065f46">SPIRE Agent (Linux container)</text>
+
+          <!-- Business API (Azure) -->
+          <rect x="80" y="210" width="240" height="55" rx="10" fill="#fff7ed" stroke="#d97706" stroke-width="2.5"></rect>
+          <text x="200" y="235" text-anchor="middle" font-size="15" font-weight="700" fill="#9a3412">Business API</text>
+          <text x="200" y="253" text-anchor="middle" font-size="12" fill="#b45309">(Linux container, registered workload)</text>
+
+          <!-- Arrow: Business API to Agent -->
+          <line x1="200" y1="210" x2="200" y2="190" stroke="#475569" stroke-width="2" marker-end="url(#arrow-h)"></line>
+          <text x="250" y="206" font-size="11" fill="#64748b">Unix Socket</text>
+
+          <!-- Arrow: Agent to Server -->
+          <line x1="200" y1="140" x2="200" y2="120" stroke="#475569" stroke-width="2" marker-end="url(#arrow-h)"></line>
+          <text x="250" y="136" font-size="11" fill="#64748b">gRPC mTLS :8081</text>
+
+          <!-- Windows VM -->
+          <rect x="420" y="10" width="360" height="280" rx="16" fill="#fef9ee" stroke="#d97706" stroke-width="2" stroke-dasharray="8,4"></rect>
+          <text x="600" y="32" text-anchor="middle" font-size="14" font-weight="600" fill="#92400e">Windows VM (no domain)</text>
+
+          <!-- SPIRE Agent (Windows Service) -->
+          <rect x="460" y="50" width="280" height="70" rx="12" fill="#ecfdf5" stroke="#059669" stroke-width="2.5"></rect>
+          <text x="600" y="82" text-anchor="middle" font-size="18" font-weight="700" fill="#065f46">SPIRE Agent</text>
+          <text x="600" y="104" text-anchor="middle" font-size="13" fill="#059669">(Windows service)</text>
+
+          <!-- Business Client (Windows Service) -->
+          <rect x="460" y="210" width="280" height="55" rx="10" fill="#fff7ed" stroke="#d97706" stroke-width="2.5"></rect>
+          <text x="600" y="235" text-anchor="middle" font-size="15" font-weight="700" fill="#9a3412">Business Client</text>
+          <text x="600" y="253" text-anchor="middle" font-size="12" fill="#b45309">(Windows service, registered workload)</text>
+
+          <!-- Arrow: Client to Agent -->
+          <line x1="600" y1="210" x2="600" y2="120" stroke="#475569" stroke-width="2" marker-end="url(#arrow-h)"></line>
+          <text x="650" y="170" font-size="11" fill="#64748b">Named Pipe</text>
+
+          <!-- Arrow: Agent to Server (cross WAN) -->
+          <line x1="460" y1="85" x2="340" y2="85" stroke="#475569" stroke-width="2.5" stroke-dasharray="6,3" marker-end="url(#arrow-h)"></line>
+          <text x="400" y="75" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">WAN/VPN</text>
+          <text x="400" y="100" text-anchor="middle" font-size="11" fill="#64748b">gRPC mTLS :8081</text>
+
+          <!-- mTLS between Business API and Client -->
+          <line x1="460" y1="237" x2="320" y2="237" stroke="#d97706" stroke-width="2.5" marker-end="url(#arrow-h)"></line>
+          <text x="390" y="230" text-anchor="middle" font-size="13" font-weight="600" fill="#9a3412">mTLS</text>
+
+          <!-- Legend -->
+          <text x="400" y="320" text-anchor="middle" font-size="13" fill="#64748b">Both Business API and Client are registered SPIRE workloads.</text>
+          <text x="400" y="338" text-anchor="middle" font-size="13" fill="#64748b">Azure agent uses Unix socket. Windows agent uses named pipe.</text>
+          <text x="400" y="356" text-anchor="middle" font-size="13" fill="#64748b">Agent-to-Server connections are agent-initiated outbound only.</text>
+
+          <!-- Key info boxes -->
+          <rect x="40" y="375" width="350" height="130" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1"></rect>
+          <text x="215" y="395" text-anchor="middle" font-size="13" font-weight="700" fill="#334155">Azure Side</text>
+          <text x="55" y="415" font-size="12" fill="#475569">Node Attestor: azure_msi or azure_imds</text>
+          <text x="55" y="433" font-size="12" fill="#475569">Workload Attestor: unix</text>
+          <text x="55" y="451" font-size="12" fill="#475569">KeyManager: azure_key_vault or disk</text>
+          <text x="55" y="469" font-size="12" fill="#475569">Workload API: Unix Domain Socket</text>
+          <text x="55" y="487" font-size="12" fill="#475569">DataStore: PostgreSQL (Azure Database)</text>
+
+          <rect x="410" y="375" width="350" height="130" rx="10" fill="#fef9ee" stroke="#d97706" stroke-width="1"></rect>
+          <text x="585" y="395" text-anchor="middle" font-size="13" font-weight="700" fill="#92400e">Windows VM Side</text>
+          <text x="425" y="415" font-size="12" fill="#475569">Node Attestor: x509pop or join_token</text>
+          <text x="425" y="433" font-size="12" fill="#475569">Workload Attestor: windows</text>
+          <text x="425" y="451" font-size="12" fill="#475569">KeyManager: disk</text>
+          <text x="425" y="469" font-size="12" fill="#475569">Workload API: Windows Named Pipe</text>
+          <text x="425" y="487" font-size="12" fill="#475569">availability_target: 24h+</text>
+        </svg>
+        <div class="diagram-caption">SPIRE Server runs centralized in Azure. Business API runs alongside an agent in Azure. Windows VM runs its own agent (Windows service) with business client workloads. All agent-to-server connections are outbound.</div>
+      </div>
+
+      <h2>Component Summary</h2>
+      <table>
+        <thead>
+          <tr><th>Component</th><th>Location</th><th>Runs As</th><th>Key Config</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>SPIRE Server</td>
+            <td>Azure (cloud)</td>
+            <td>Linux container</td>
+            <td>PostgreSQL datastore, <code>azure_key_vault</code> KeyManager, <code>azure_msi</code>/<code>azure_imds</code> + <code>join_token</code>/<code>x509pop</code> NodeAttestors</td>
+          </tr>
+          <tr>
+            <td>SPIRE Agent (Azure)</td>
+            <td>Azure (cloud)</td>
+            <td>Linux container</td>
+            <td><code>socket_path</code> for Workload API, <code>azure_msi</code>/<code>azure_imds</code> NodeAttestor, <code>unix</code> WorkloadAttestor</td>
+          </tr>
+          <tr>
+            <td>Business API</td>
+            <td>Azure (cloud)</td>
+            <td>Linux container</td>
+            <td>Registered workload, fetches SVIDs via Unix socket</td>
+          </tr>
+          <tr>
+            <td>SPIRE Agent (Windows)</td>
+            <td>Windows VM</td>
+            <td>Windows service</td>
+            <td><code>experimental { named_pipe_name }</code> for Workload API, <code>x509pop</code> or <code>join_token</code> NodeAttestor, <code>windows</code> WorkloadAttestor, <code>availability_target = "24h"</code></td>
+          </tr>
+          <tr>
+            <td>Business Client</td>
+            <td>Windows VM</td>
+            <td>Windows service</td>
+            <td>Registered workload, fetches SVIDs via named pipe</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>SPIRE Server Setup (Azure)</h2>
+      <p>Deploy SPIRE Server as a Linux container in Azure Container Instances, Azure Kubernetes Service, or a Linux VM. Use Azure Database for PostgreSQL as the datastore and Azure Key Vault for key management.</p>
+      <pre><code>server {
+    bind_address = "0.0.0.0"
+    bind_port = "8081"
+    socket_path = "/tmp/spire-server/private/api.sock"
+    trust_domain = "mirmat.org"
+    data_dir = "/opt/spire/data/server"
+    log_level = "INFO"
+    log_format = "json"
+    ca_ttl = "24h"
+}
+
+plugins {
+    DataStore "sql" {
+        plugin_data {
+            database_type = "postgres"
+            connection_string = "host=spire-db.postgres.database.azure.com port=5432 dbname=spire user=spire password=&lt;secret&gt; sslmode=verify-full"
+        }
+    }
+    KeyManager "azure_key_vault" {
+        plugin_data {
+            key_vault_uri = "https://spire-keyvault.vault.azure.net/"
+            key_identifier_file = "/opt/spire/data/server/azure_key_id"
+        }
+    }
+    NodeAttestor "azure_imds" {
+        plugin_data {
+            tenants = {
+                "&lt;azure-tenant-id&gt;" = {
+                    resource_groups = ["spire-agents-rg"]
+                }
+            }
+        }
+    }
+    NodeAttestor "x509pop" {
+        plugin_data {
+            ca_bundle_path = "/opt/spire/conf/server/agent-ca.pem"
+        }
+    }
+    NodeAttestor "join_token" {
+        plugin_data {}
+    }
+}</code></pre>
+      <p>Official reference: <a href="https://spiffe.io/docs/latest/deploying/spire_server/">SPIRE Server configuration</a>, <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_server_keymanager_azure_key_vault.md">azure_key_vault plugin</a>, <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_server_nodeattestor_azure_imds.md">azure_imds plugin</a></p>
+
+      <h2>SPIRE Agent Setup (Azure - Linux)</h2>
+      <p>Agent running alongside Business API in Azure. Uses Azure node attestation and Unix workload attestation.</p>
+      <pre><code>agent {
+    data_dir = "/opt/spire/data/agent"
+    log_level = "INFO"
+    log_format = "json"
+    server_address = "spire-server.internal"
+    server_port = "8081"
+    socket_path = "/opt/spire/sockets/workload_api.sock"
+    trust_bundle_path = "/opt/spire/conf/agent/bootstrap.crt"
+    trust_domain = "mirmat.org"
+}
+
+plugins {
+    NodeAttestor "azure_imds" {
+        plugin_data {}
+    }
+    KeyManager "disk" {
+        plugin_data {
+            directory = "/opt/spire/data/agent"
+        }
+    }
+    WorkloadAttestor "unix" {
+        plugin_data {
+            discover_workload_path = true
+        }
+    }
+}</code></pre>
+
+      <h2>SPIRE Agent Setup (Windows VM)</h2>
+      <p>Agent runs as a Windows service on a VM not connected to a domain. Uses <code>x509pop</code> or <code>join_token</code> for node attestation and the <code>windows</code> WorkloadAttestor for identifying local workloads.</p>
+
+      <div class="callout callout-warning">
+        <div class="callout-title">Named pipe is experimental</div>
+        <p>The <code>named_pipe_name</code> setting is still experimental in SPIRE v1.15.0. It is functional but the configuration interface may change in future releases <a href="https://github.com/spiffe/spire/blob/main/doc/spire_agent.md">[Agent config ref]</a>.</p>
+      </div>
+
+      <pre><code>agent {
+    data_dir = "C:\\spire\\data\\agent"
+    log_level = "INFO"
+    log_format = "json"
+    server_address = "spire-server.example.com"
+    server_port = "8081"
+    trust_bundle_path = "C:\\spire\\conf\\agent\\bootstrap.crt"
+    trust_domain = "mirmat.org"
+    availability_target = "24h"
+
+    experimental {
+        named_pipe_name = "\\spire-agent\\public\\api"
+    }
+}
+
+plugins {
+    NodeAttestor "x509pop" {
+        plugin_data {
+            private_key_path = "C:\\spire\\conf\\agent\\agent.key.pem"
+            certificate_path = "C:\\spire\\conf\\agent\\agent.crt.pem"
+        }
+    }
+    KeyManager "disk" {
+        plugin_data {
+            directory = "C:\\spire\\data\\agent"
+        }
+    }
+    WorkloadAttestor "windows" {
+        plugin_data {
+            discover_workload_path = true
+        }
+    }
+}</code></pre>
+
+      <h3>Installing Agent as Windows Service</h3>
+      <pre><code># Install SPIRE Agent as a Windows service using sc.exe
+sc.exe create "SPIRE Agent" binPath= "C:\spire\bin\spire-agent.exe run -config C:\spire\conf\agent\agent.conf" start= auto
+sc.exe start "SPIRE Agent"
+
+# Or use NSSM for more control over service management
+nssm install "SPIRE Agent" "C:\spire\bin\spire-agent.exe" "run -config C:\spire\conf\agent\agent.conf"
+nssm set "SPIRE Agent" AppDirectory "C:\spire"
+nssm start "SPIRE Agent"</code></pre>
+
+      <h2>Workload Registration</h2>
+      <p>Register both Business API (Linux) and Business Client (Windows) as workloads on the SPIRE Server.</p>
+      <pre><code># Register Business API (Linux workload, unix attestor)
+spire-server entry create \
+    -spiffeID spiffe://mirmat.org/business-api \
+    -parentID spiffe://mirmat.org/spire/agent/azure_imds/&lt;tenant-id&gt;/&lt;sub-id&gt;/&lt;vm-id&gt; \
+    -selector unix:uid:10001
+
+# Register Business Client (Windows workload, windows attestor)
+spire-server entry create \
+    -spiffeID spiffe://mirmat.org/business-client \
+    -parentID spiffe://mirmat.org/spire/agent/x509pop/&lt;agent-fingerprint&gt; \
+    -selector windows:user_name:WORKGROUP\\BusinessSvc</code></pre>
+      <p>Official reference: <a href="https://spiffe.io/docs/latest/deploying/registering/">Registering workloads</a>, <a href="https://github.com/spiffe/spire/blob/main/doc/plugin_agent_workloadattestor_windows.md">windows WorkloadAttestor selectors</a></p>
+
+      <h2>Network Requirements</h2>
+      <ul>
+        <li><strong>Azure to Azure:</strong> SPIRE Agent in Azure reaches Server on port <code>8081</code> over internal network. No public exposure needed.</li>
+        <li><strong>Windows VM to Azure:</strong> outbound access from Windows VM to SPIRE Server on port <code>8081</code> over WAN or VPN. All connections are agent-initiated. No inbound ports needed on the Windows VM.</li>
+        <li><strong>Business Client to Business API:</strong> mTLS connection between workloads. Firewall must allow the application port (e.g., <code>8443</code>) from Windows VM to Azure.</li>
+        <li><strong>Named pipe access:</strong> Business Client accesses SPIRE Agent via named pipe on localhost. No network port needed.</li>
+      </ul>
+
+      <h2>Resilience Considerations</h2>
+      <ul>
+        <li>Set <code>availability_target = "24h"</code> (or longer) on the Windows agent to handle WAN/VPN outages <a href="https://spiffe.io/docs/latest/deploying/spire_agent/#availability-target">[Availability target]</a>.</li>
+        <li>Use <code>KeyManager "disk"</code> on the Windows agent so SVIDs survive agent restarts.</li>
+        <li>Place <code>data_dir</code> on persistent local storage on the Windows VM.</li>
+        <li>Agent reconnects automatically with exponential backoff when connectivity is restored.</li>
+        <li>Workloads keep using cached SVIDs during server outages.</li>
+      </ul>
+
+      <div class="page-nav">
+        <a href="deployment.html" class="prev">
+          <span class="label">Previous</span>
+          <span class="title">Deployment</span>
+        </a>
+        <a href="deployment-onprem.html" class="next">
+          <span class="label">Next</span>
+          <span class="title">On-Premises Deployment</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

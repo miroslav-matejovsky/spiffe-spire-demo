@@ -21,6 +21,8 @@
       <a href="concepts.html">Core Concepts</a>
       <div class="nav-section">Operations</div>
       <a href="deployment.html" class="active">Deployment</a>
+      <a href="deployment-hybrid.html">Hybrid Deployment</a>
+      <a href="deployment-onprem.html">On-Premises Deployment</a>
       <a href="networking.html">Networking &amp; Security</a>
       <a href="configuration.html">Configuration</a>
       <div class="nav-section">Developer Guides</div>
@@ -43,6 +45,15 @@
 
       <h1>Deployment Requirements and Guide</h1>
       <p>Use this page to prepare your workstation for the demo scenarios in this repository and to understand what changes when you move from a lab setup to a production SPIRE deployment. It also covers real-world deployment patterns where SPIRE agents run on Windows VMs and physical machines with limited network access, connecting to a centralized SPIRE server.</p>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Environment-specific guides</div>
+        <p>For detailed deployment instructions with architecture diagrams and full configuration examples, see the environment-specific guides:</p>
+        <ul>
+          <li><a href="deployment-hybrid.html"><strong>Hybrid Deployment</strong></a> - SPIRE Server in Azure (Linux container) + SPIRE Agent on Windows VM + business applications</li>
+          <li><a href="deployment-onprem.html"><strong>On-Premises Deployment</strong></a> - SPIRE Server (Windows service) on VM + SPIRE Agents on separate Windows VMs across network segments</li>
+        </ul>
+      </div>
 
       <h2>Prerequisites</h2>
       <p>To run the scenarios in this repository you need the following tools:</p>
