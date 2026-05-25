@@ -1,1 +1,5 @@
+# docs improvements
+
 - add link to the git repository in the /docs (https://github.com/miroslav-matejovsky/spiffe-spire-demo)
+- arrows in architecture diagram are inverted - they should point from client to server, not the other way around (document the arrow direction in the diagram legend)
+- `Node Attestor` and `Upstream authority` should be written in two rows in the diagram (now they are overlapping in the rendered image - validate the diagram rendering in the markdown and adjust the layout if needed)
