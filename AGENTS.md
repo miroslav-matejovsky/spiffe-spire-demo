@@ -9,6 +9,8 @@
 - Do not re-read files you have already read unless the file may have changed.
 - Keep solutions simple and direct.
 - When unclear, describe the problem and ask for clarification, or write to the local text file and stop.
+- Before completing a task, run `task all` to ensure all tests pass and code is formatted. `task all` must pass before work is considered complete!
+- After completing a task, update the `.todo` file with any remaining work or future improvements. Be specific and clear in instructions for future work.
 
 ## Business Purpose
 
